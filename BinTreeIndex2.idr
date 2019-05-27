@@ -1,4 +1,4 @@
-module BinTree2
+module BinTreeIndex2
 
 %default total
 %language ElabReflection
@@ -29,7 +29,7 @@ createElem (Node value (Just left) (Just right)) item =
     Yes Refl => Just ThisNode
     No contra => (map LeftNode (createElem left item)) <|> (map RightNode (createElem right item))
 
-getElem : {item : a} -> (tree : Tree a) -> Elem item tree -> a
+getElem : (tree : Tree a) -> Elem item tree -> a
 getElem (Node item _ _) ThisNode = item
 getElem (Node _ (Just left) _) (LeftNode path) = getElem left path
 getElem (Node _ _ (Just right)) (RightNode path) = getElem right path

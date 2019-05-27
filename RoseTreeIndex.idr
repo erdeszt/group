@@ -23,22 +23,13 @@ createChildElem [] item = Nothing
 createChildElem ((Node value children) :: siblings) item =
   case decEq value item of
     Yes Refl => Just ChildHere
-    No contra =>
-      case createChildElem siblings item of
-        Just path => Just (ChildThere path)
-        Nothing =>
-          case createChildElem children item of
-            Just path => Just (GrandChild path)
-            Nothing => Nothing
+    No contra => (map ChildThere (createChildElem siblings item)) <|> (map GrandChild (createChildElem children item))
 
 createElem : DecEq a => (tree : Tree a) -> (item : a) -> Maybe (Elem item tree)
 createElem (Node value children) item =
   case decEq value item of
     Yes Refl => Just RootElem
-    No contra =>
-      case createChildElem children item of
-        Nothing => Nothing
-        Just path => Just (ChildOfRoot path)
+    No contra => map ChildOfRoot (createChildElem children item)
 
 getChildElem : (trees : List (Tree a)) -> ChildElem item trees -> a
 getChildElem ((Node item _) :: _)      ChildHere        = item

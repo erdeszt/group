@@ -18,6 +18,6 @@ createElem (x :: xs) item =
     Yes Refl => Just Here
     No contra => map (\path => There path) (createElem xs item)
 
-getElem : {item : a} -> (list : List a) -> Elem item list -> a
+getElem : (list : List a) -> Elem item list -> a
 getElem (item :: ys) Here = item
 getElem (y :: ys) (There x) = getElem ys x

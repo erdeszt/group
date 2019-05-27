@@ -1,11 +1,12 @@
-package graph
+package group
 
-main = Groups
+main = Group
 
 pkgs = pruviloj
 
-modules = Groups
+modules = Group
         , BinTreeIndex
+        , BinTreeIndex2
         , ListIndex
         , RoseTreeIndex
 
