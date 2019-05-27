@@ -59,8 +59,8 @@ testTree : Tree Nat
 testTree = Node 1 [Node 2 [Node 3 []], Node 4 [Node 5 []]]
 
 test1 : getOr RoseTreeIndex.testTree 10 11 = 11
-test1 = %runElab reflexivity
+test1 = Refl
 
 test2 : getOr RoseTreeIndex.testTree 3 11 = 3
-test2 = %runElab reflexivity
+test2 = Refl
 
