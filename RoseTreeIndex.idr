@@ -9,45 +9,45 @@ import Pruviloj.Induction
 data Tree : Type -> Type where
   Node : (value : a) -> (children : List (Tree a)) -> Tree a
 
-data ListElem : a -> List (Tree a) -> Type where
-  Here : ListElem x ((Node x cs) :: ts)
-  There : ListElem x xs -> ListElem x (y :: xs)
-  ChildHere : ListElem item children -> ListElem item ((Node x children) :: xs)
+data ChildElem : a -> List (Tree a) -> Type where
+  ChildHere  :                   ChildElem x ((Node x children) :: siblings)
+  ChildThere : ChildElem x xs -> ChildElem x (node :: xs)
+  GrandChild : ChildElem x xs -> ChildElem x ((Node value xs) :: siblings)
 
 data Elem : a -> Tree a -> Type where
-  ThisNode : Elem x (Node x cs)
-  ChildNode : ListElem x trees -> Elem x (Node y trees)
+  RootElem    :                   Elem x (Node x children)
+  ChildOfRoot : ChildElem x xs -> Elem x (Node value xs)
 
-createListElem : DecEq a => (trees : List (Tree a)) -> (item : a) -> Maybe (ListElem item trees)
-createListElem [] item = Nothing
-createListElem ((Node value children) :: xs) item =
+createChildElem : DecEq a => (trees : List (Tree a)) -> (item : a) -> Maybe (ChildElem item trees)
+createChildElem [] item = Nothing
+createChildElem ((Node value children) :: siblings) item =
   case decEq value item of
-    Yes Refl => Just Here
+    Yes Refl => Just ChildHere
     No contra =>
-      case createListElem xs item of
-        Just path => Just (There path)
+      case createChildElem siblings item of
+        Just path => Just (ChildThere path)
         Nothing =>
-          case createListElem children item of
-            Just path => Just (ChildHere path)
+          case createChildElem children item of
+            Just path => Just (GrandChild path)
             Nothing => Nothing
 
 createElem : DecEq a => (tree : Tree a) -> (item : a) -> Maybe (Elem item tree)
 createElem (Node value children) item =
   case decEq value item of
-    Yes Refl => Just ThisNode
+    Yes Refl => Just RootElem
     No contra =>
-      case createListElem children item of
+      case createChildElem children item of
         Nothing => Nothing
-        Just path => Just (ChildNode path)
+        Just path => Just (ChildOfRoot path)
 
-getListElem : (trees : List (Tree a)) -> ListElem item trees -> a
-getListElem ((Node item _) :: _)      Here = item
-getListElem (_ :: xs)                (There path) = getListElem xs path
-getListElem ((Node _ children) :: _) (ChildHere path) = getListElem children path
+getChildElem : (trees : List (Tree a)) -> ChildElem item trees -> a
+getChildElem ((Node item _) :: _)      ChildHere        = item
+getChildElem (_ :: siblings)          (ChildThere path) = getChildElem siblings path
+getChildElem ((Node _ children) :: _) (GrandChild path) = getChildElem children path
 
 getElem : (tree : Tree a) -> Elem item tree -> a
-getElem (Node item _) ThisNode = item
-getElem (Node _ trees) (ChildNode path) = getListElem trees path
+getElem (Node item _)   RootElem          = item
+getElem (Node _ trees) (ChildOfRoot path) = getChildElem trees path
 
 getOr : DecEq a => (tree : Tree a) -> (item : a) -> (default : a) -> a
 getOr tree item default =
