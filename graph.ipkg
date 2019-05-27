@@ -1,0 +1,11 @@
+package graph
+
+main = Groups
+
+pkgs = pruviloj
+
+modules = Groups
+        , BinTreeIndex
+        , ListIndex
+        , RoseTreeIndex
+
