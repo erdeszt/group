@@ -2,7 +2,8 @@ package group
 
 main = Group
 
-pkgs = pruviloj
+pkgs = contrib
+     , pruviloj
 
 modules = Group
         , BinTreeIndex
