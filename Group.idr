@@ -43,6 +43,63 @@ data Elem : GroupId -> Group -> Type where
   LeftGroup : Elem g group -> Elem g (MkGroup h m (Just group) r)
   RightGroup : Elem g group -> Elem g (MkGroup h m l (Just group))
 
+data ElemGroup : GroupId -> Maybe UserId -> Maybe Group -> Maybe Group -> Group -> Type where
+  ThisGroup' : ElemGroup g m l r (MkGroup g m l r)
+  LeftGroup' : ElemGroup g m l r group -> ElemGroup g m l r (MkGroup g' m' (Just group) r')
+  RightGroup' : ElemGroup g m l r group -> ElemGroup g m l r (MkGroup g' m' l' (Just group))
+
+
+data Child : (child : GroupId) -> (parent : GroupId) -> Group -> Type where
+  LeftChildHere : Child child parent (MkGroup parent m (Just (MkGroup child m' l' r')) r)
+  LeftChildThere : Child child parent group -> Child child parent (MkGroup parent m (Just group) r)
+  RightChildHere : Child child parent (MkGroup parent m l (Just (MkGroup child m' l' r')))
+  RightChildThere : Child child parent group -> Child child parent (MkGroup parent m l (Just group))
+
+  -- LeftChildHere : Child child parent (MkGroup parent m (Just (MkGroup child m' l' r')) r)
+  -- LeftChildThere : Child child parent group -> Child child parent (MkGroup parent m (Just (MkGroup child' m' (Just group) r')) r)
+  -- RightChildHere : Child child parent (MkGroup parent m l (Just (MkGroup child m' l' r')))
+  -- RightChildThere : Child child parent group -> Child child parent (MkGroup parent m l (Just (MkGroup child' m' l' (Just group))))
+
+createChild : (group : Group) -> (child : GroupId) -> (parent : GroupId) -> {childElem : ElemGroup child cm cl cr group} -> {parentElem : ElemGroup parent pm pl pr group} -> Maybe (Child child parent group)
+createChild (MkGroup parent pm pl pr) parent parent {childElem = ThisGroup'} {parentElem = ThisGroup'} = Nothing
+createChild (MkGroup parent pm (Just (MkGroup child cm cl cr)) pr) child parent {childElem = (LeftGroup' ThisGroup')} {parentElem = ThisGroup'} =
+  Just LeftChildHere
+createChild group@(MkGroup parent pm (Just (MkGroup g' m' (Just left) r')) pr) child parent {childElem = (LeftGroup' (LeftGroup' y))} {parentElem = ThisGroup'} =
+  -- let c = createChild (assert_smaller group left) child parent in
+  -- let re = map LeftChildThere c in
+  ?wat
+createChild (MkGroup parent pm (Just (MkGroup g' m' l' (Just right))) pr) child parent {childElem = (LeftGroup' (RightGroup' y))} {parentElem = ThisGroup'} = ?createChild_rhs_7
+createChild (MkGroup parent pm pl (Just group)) child parent {childElem = (RightGroup' x)} {parentElem = ThisGroup'} = ?createChild_rhs_6
+createChild (MkGroup g' m' (Just x) r') child parent {childElem = childElem} {parentElem = (LeftGroup' y)} = ?createChild_rhs_2
+createChild (MkGroup g' m' l' (Just x)) child parent {childElem = childElem} {parentElem = (RightGroup' y)} = ?createChild_rhs_3
+
+-- createChild (MkGroup parent m l r) parent parent {childElem = ThisGroup} {parentElem = ThisGroup} = Nothing -- Parent and child are the same, should prevent it somehow
+-- createChild (MkGroup parent m (Just (MkGroup child m' l' r')) r) child parent {childElem = (LeftGroup ThisGroup)} {parentElem = ThisGroup} = Just LeftChildHere
+-- createChild fullGroup@(MkGroup parent m (Just group@(MkGroup child' m' (Just l') r')) r) child parent {childElem = (LeftGroup (LeftGroup childElem'))} {parentElem = ThisGroup} =
+--   let c = createChild l' child parent in
+--   let c = createChild (assert_smaller fullGroup group) child parent in
+--   -- let cc = createChild l' child parent {childElem = LeftGroup $ LeftGroup childElem'} in
+--   let re = map LeftChildThere c in
+--   ?wat
+-- createChild (MkGroup parent m (Just (MkGroup h x l (Just y))) r) child parent {childElem = (LeftGroup (RightGroup z))} {parentElem = ThisGroup} = ?wat_3
+-- createChild (MkGroup parent m l (Just group)) child parent {childElem = (RightGroup x)} {parentElem = ThisGroup} = ?createChild_rhs_6
+-- createChild (MkGroup h m (Just x) r) child parent {childElem = childElem} {parentElem = (LeftGroup y)} = ?createChild_rhs_2
+-- createChild (MkGroup h m l (Just x)) child parent {childElem = childElem} {parentElem = (RightGroup y)} = ?createChild_rhs_3
+
+-- createChild (MkGroup parent m l r) parent parent {childElem = ThisGroup} {parentElem = ThisGroup} = Nothing -- Parent and child are the same, should prevent it somehow
+-- createChild (MkGroup parent m (Just (MkGroup child member left right)) r) child parent {childElem = (LeftGroup ThisGroup)} {parentElem = ThisGroup} = Just LeftChildHere
+-- createChild (MkGroup parent m (Just (MkGroup child' member (Just group@(MkGroup y z left w)) right)) r) child parent {childElem = (LeftGroup (LeftGroup x))} {parentElem = ThisGroup} = -- ?wat_1
+  -- let c = createChild group child parent in
+  -- map LeftChildThere c
+
+  -- ?wat
+
+--   -- map LeftChildThere (createChild group child parent) -- {childElem = LeftGroup x} {parentElem = LeftGroup ThisGroup})
+-- createChild (MkGroup parent m (Just (MkGroup y member left (Just group))) r) child parent {childElem = (LeftGroup (RightGroup x))} {parentElem = ThisGroup} = ?wat_3
+-- createChild (MkGroup parent m l (Just group)) child parent {childElem = (RightGroup x)} {parentElem = ThisGroup} = ?createChild_rhs_6
+-- createChild (MkGroup h m (Just x) r) child parent {childElem = childElem} {parentElem = (LeftGroup y)} = ?createChild_rhs_2
+-- createChild (MkGroup h m l (Just x)) child parent {childElem = childElem} {parentElem = (RightGroup y)} = ?createChild_rhs_3
+
 createElem : (group : Group) -> (groupId : GroupId) -> Maybe (Elem groupId group)
 createElem (MkGroup currentGid member Nothing Nothing) gid =
   case decEq currentGid gid of
@@ -128,6 +185,10 @@ grant (MkGroup currentGid member left (Just right)) (RightGroup elem) newMember 
     (group ** (elemPrf, memberPrf)) =>
       ((MkGroup currentGid member left (Just group)) ** (RightGroup elemPrf, AccessToRight memberPrf))
 
+
+
+
+      {-
 data HasLeftChild : Group -> GroupId -> Type where
   MkHasLeftChild : HasLeftChild (MkGroup gid member (Just (MkGroup lGid lMember lLeft lRight)) right) lGid
 
@@ -158,3 +219,4 @@ direct_access_extends_right : {groupId : GroupId}
                            -> HasRightChild group rightId
                            -> HasAccess rightId userId group
 direct_access_extends_right MkDirectAccess MkHasRightChild = AccessToParent
+                          -}
