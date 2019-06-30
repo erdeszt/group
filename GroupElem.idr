@@ -27,9 +27,4 @@ createElem (MkGroup currentGid member (Just left) (Just right)) gid =
   case decEq currentGid gid of
     Yes Refl => Just ThisGroup
     No contra =>
-      case createElem left gid of
-        Nothing =>
-          case createElem right gid of
-            Nothing => Nothing
-            Just elem => Just (RightGroup elem)
-        Just elem => Just (LeftGroup elem)
+      map LeftGroup (createElem left gid) <|> map RightGroup (createElem right gid)
