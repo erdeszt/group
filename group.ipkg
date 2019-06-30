@@ -6,6 +6,10 @@ pkgs = contrib
      , pruviloj
 
 modules = Group
+        , GroupApi
+        , GroupChild
+        , GroupDistinctElem
+        , GroupElem
         , BinTreeIndex
         , BinTreeIndex2
         , ListIndex
