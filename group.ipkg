@@ -6,6 +6,7 @@ pkgs = contrib
      , pruviloj
 
 modules = Group
+        , GroupAccess
         , GroupApi
         , GroupChild
         , GroupDistinctElem
