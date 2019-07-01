@@ -13,21 +13,21 @@ import GroupElem
 --     the Elem of the group
 --
 
-data Prefix : (childElem : Elem childId group) -> (parentElem : Elem parentId group) -> Type where
-  ChildOnLeft : Prefix (LeftGroup child) ThisGroup
-  ChildOnRight : Prefix (RightGroup child) ThisGroup
-  GoingLeft : Prefix parent child -> Prefix (LeftGroup parent) (LeftGroup child)
-  GoingRight : Prefix parent child -> Prefix (RightGroup parent) (RightGroup child)
+data Child : (childElem : Elem childId group) -> (parentElem : Elem parentId group) -> Type where
+  ChildOnLeft : Child (LeftGroup child) ThisGroup
+  ChildOnRight : Child (RightGroup child) ThisGroup
+  PrefixLeft : Child parent child -> Child (LeftGroup parent) (LeftGroup child)
+  PrefixRight : Child parent child -> Child (RightGroup parent) (RightGroup child)
 
-createPrefix : (childElem : Elem childId group) -> (parentElem : Elem parentId group) -> Maybe (Prefix childElem parentElem)
-createPrefix ThisGroup ThisGroup = Nothing -- Same elem TODO: Prevent this with DistinctElem
-createPrefix ThisGroup (LeftGroup _) = Nothing -- Child path is shorter than parent
-createPrefix ThisGroup (RightGroup _) = Nothing -- Child path is shorter than parent
-createPrefix (LeftGroup _) ThisGroup = Just ChildOnLeft
-createPrefix (LeftGroup child) (LeftGroup parent) =
-  map GoingLeft (createPrefix child parent)
-createPrefix (LeftGroup _) (RightGroup _) = Nothing -- Child goes left parent goes right
-createPrefix (RightGroup _) ThisGroup = Just ChildOnRight
-createPrefix (RightGroup _) (LeftGroup _) = Nothing -- Child goes right parent goes left
-createPrefix (RightGroup child) (RightGroup parent) =
-  map GoingRight (createPrefix child parent)
+createChild : (childElem : Elem childId group) -> (parentElem : Elem parentId group) -> Maybe (Child childElem parentElem)
+createChild ThisGroup ThisGroup = Nothing -- Same elem TODO: Prevent this with DistinctElem
+createChild ThisGroup (LeftGroup _) = Nothing -- Child path is shorter than parent
+createChild ThisGroup (RightGroup _) = Nothing -- Child path is shorter than parent
+createChild (LeftGroup _) ThisGroup = Just ChildOnLeft
+createChild (LeftGroup child) (LeftGroup parent) =
+  map PrefixLeft (createChild child parent)
+createChild (LeftGroup _) (RightGroup _) = Nothing -- Child goes left parent goes right
+createChild (RightGroup _) ThisGroup = Just ChildOnRight
+createChild (RightGroup _) (LeftGroup _) = Nothing -- Child goes right parent goes left
+createChild (RightGroup child) (RightGroup parent) =
+  map PrefixRight (createChild child parent)
