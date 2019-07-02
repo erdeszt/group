@@ -18,6 +18,7 @@ modules = Group
         , RoseTreeIndex
         , Bifunctor
         , Or
+        , BackboneQueues
 
 executable = groupexample.exe
 
