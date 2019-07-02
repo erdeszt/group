@@ -31,3 +31,16 @@ createChild (RightGroup _) ThisGroup = Just ChildOnRight
 createChild (RightGroup _) (LeftGroup _) = Nothing -- Child goes right parent goes left
 createChild (RightGroup child) (RightGroup parent) =
   map PrefixRight (createChild child parent)
+
+lemma_child_transitive : {a, b, c : GroupId}
+                      -> {group : Group}
+                      -> {aElem : Elem a group}
+                      -> {bElem : Elem b group}
+                      -> {cElem : Elem c group}
+                      -> Child bElem aElem
+                      -> Child cElem bElem
+                      -> Child cElem aElem
+lemma_child_transitive ChildOnLeft (PrefixLeft _) = ChildOnLeft
+lemma_child_transitive ChildOnRight (PrefixRight _) = ChildOnRight
+lemma_child_transitive (PrefixLeft ba) (PrefixLeft cb) = PrefixLeft (lemma_child_transitive ba cb)
+lemma_child_transitive (PrefixRight ba) (PrefixRight cb) = PrefixRight (lemma_child_transitive ba cb)
