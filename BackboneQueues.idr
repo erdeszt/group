@@ -47,17 +47,65 @@ interface BackboneQueueApi api where
   requirement_getNext_from_empty_queue_is_always_Nothing : {teamName : TeamName} 
                                                         -> {queueName : Maybe QueueName}
                                                         -> {dermId : DermId}
-                                                        -> (getNext emptyQueue teamNam queueName dermId) = Nothing
+                                                        -> (getNext emptyQueue teamName queueName dermId) = Nothing
 
+  requirement_non_interference_between_derms : {teamName : TeamName}
+                                            -> {queueName : Maybe QueueName}
+                                            -> {dermId : DermId}
+                                            -> {dermIdOther : DermId}  -- What about dermId = dermIdOther
+                                            -> {otherDermsItems : List WorkItem}
+                                            -> {dermsWorkItem : WorkItem}
+                                            -> let queue = (enqueue emptyQueue otherDermsItems teamName queueName 1 (EnqueueForDerms [dermIdOther])) in
+                                               let queue' = enqueue queue [dermsWorkItem] teamName queueName 1 (EnqueueForDerms [dermId]) in
+                                               (getNext queue' teamName queueName dermId) = (Just dermsWorkItem)
+                                            
+record QueueItem where
+  constructor MkQueueItem
+  workItem : WorkItem
+  teamName : TeamName
+  queueName : Maybe QueueName
+  priority : Priority
+  dermId : Maybe DermId
 
-data LBA = MkLBA (List WorkItem) -- List Based (implementation of the) Api
+data LBA = MkLBA (List QueueItem) -- List Based (implementation of the) Api
+
+enqueueForAllDerms : LBA -> WorkItem -> TeamName -> Maybe QueueName -> Priority -> List DermId -> LBA
+enqueueForAllDerms state workItem teamname queueName priority [] = state
+enqueueForAllDerms (MkLBA xs) workItem teamName queueName priority (derm :: derms) = 
+  let queueItem = MkQueueItem workItem teamName queueName priority (Just derm) in
+  enqueueForAllDerms (MkLBA (queueItem :: xs)) workItem teamName queueName priority derms
+
+-- lemma_dec_eq_reflexive : {a : DermId} -> case decEq a a of { Yes _ => aResult; No _ => bResult } = aResult
+-- lemma_dec_eq_reflexive = ?wattt
 
 BackboneQueueApi LBA where
   emptyQueue = MkLBA []
 
-  enqueue state workItems teamName queueName priority enqueueFor = ?impl_enqueue
+
+
+
+  enqueue state [] teamName queueName priority enqueueFor = state
+  -- TODO: Non empty list for derms, work items
+  enqueue state (x :: xs) teamName queueName priority (EnqueueForDerms derms) =
+    let state' = enqueueForAllDerms state x teamName queueName priority derms in
+    enqueue state' xs teamName queueName priority (EnqueueForDerms derms)
+  enqueue state (x :: xs) teamName queueName priority (EnqueueForProject requiredEvaluationsPerWorkItem) = ?imp_2
 
   getNext (MkLBA []) teamName queueName dermId = Nothing
-  getNext (MkLBA (w :: ws)) teamName queueName dermId = ?impl_getNext_for_empty_queue
+  getNext (MkLBA ((MkQueueItem workItem x y priority Nothing) :: ws)) teamName queueName dermId = Nothing -- NOTE: Incomplete, no project queues yet
+  getNext st@(MkLBA ((MkQueueItem workItem x y priority (Just z)) :: ws)) teamName queueName dermId =
+    case decEq z dermId of
+      Yes Refl => Just workItem
+      -- NOTE: FIX THIS
+      No _ => getNext (assert_smaller st (MkLBA ws)) teamName queueName dermId
+    
 
   requirement_getNext_from_empty_queue_is_always_Nothing = Refl
+
+  requirement_non_interference_between_derms {otherDermsItems = []} {dermId} =
+    -- rewrite decEqSelfIsYes {x=dermId} in
+    ?wat
+    -- case decEq dermId dermId of
+    --   Yes Refl => ?wasaat
+    --   No _ => ?noo
+  requirement_non_interference_between_derms {otherDermsItems = (x :: xs)} = ?wat_2
