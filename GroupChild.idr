@@ -14,6 +14,7 @@ import GroupElem
 --
 
 -- TODO: Naming + examples
+-- TODO: child and parent id can be implicit probably
 data PP : (childId : GroupId) -> (parentId : GroupId) -> (childElem : Elem childId group) -> (parentElem : Elem parent group) -> Group -> Type where
   ParentEndsHereChildOnLeft : (childElem : Elem childId (MkGroup parentId m l r)) -> PP childId parentId childElem ThisGroup (MkGroup parentId m' (Just group) r')
   ParentEndsHereChildOnRight : (childElem : Elem childId (MkGroup parentId m l r)) -> PP childId parentId childElem ThisGroup (MkGroup parentId m' l' (Just group))
