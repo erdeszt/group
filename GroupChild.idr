@@ -12,45 +12,42 @@ import GroupElem
 --     && the Elem of the parent is a prefix of
 --     the Elem of the group
 --
+data Child : (childElem : Elem childId group) -> (parentElem : Elem parent group) -> Group -> Type where
+  ParentEndsHereChildOnLeft : (childElem : Elem childId (MkGroup parentId m l r)) -> Child childElem ThisGroup (MkGroup parentId m' (Just group) r')
+  ParentEndsHereChildOnRight : (childElem : Elem childId (MkGroup parentId m l r)) -> Child childElem ThisGroup (MkGroup parentId m' l' (Just group))
+  PrefixLeft : Child childElem parentElem group -> Child (LeftGroup childElem) (LeftGroup parentElem) (MkGroup gid m' (Just group) r')
+  PrefixRight : Child childElem parentElem group -> Child (RightGroup childElem) (RightGroup parentElem) (MkGroup gid m' l' (Just group))
 
--- TODO: Naming + examples
--- TODO: child and parent id can be implicit probably
-data PP : (childId : GroupId) -> (parentId : GroupId) -> (childElem : Elem childId group) -> (parentElem : Elem parent group) -> Group -> Type where
-  ParentEndsHereChildOnLeft : (childElem : Elem childId (MkGroup parentId m l r)) -> PP childId parentId childElem ThisGroup (MkGroup parentId m' (Just group) r')
-  ParentEndsHereChildOnRight : (childElem : Elem childId (MkGroup parentId m l r)) -> PP childId parentId childElem ThisGroup (MkGroup parentId m' l' (Just group))
-  PrefixLeft : (pp : PP childId parentId childElem parentElem group) -> PP childId parentId (LeftGroup childElem) (LeftGroup parentElem) (MkGroup gid m' (Just group) r')
-  PrefixRight : (pp : PP childId parentId childElem parentElem group) -> PP childId parentId (RightGroup childElem) (RightGroup parentElem) (MkGroup gid m' l' (Just group))
-
-createPP : {group : Group} -> (childId : GroupId) -> (parentId : GroupId) -> (childElem : Elem childId group) -> (parentElem : Elem parentId group) -> Maybe (PP childId parentId childElem parentElem group)
-createPP {group = (MkGroup parentId m l r)} parentId parentId ThisGroup ThisGroup =
+createChild : {group : Group} -> {childId : GroupId} -> {parentId : GroupId} -> (childElem : Elem childId group) -> (parentElem : Elem parentId group) -> Maybe (Child childElem parentElem group)
+createChild {group = (MkGroup parentId m l r)} {childId=parentId} {parentId=parentId} ThisGroup ThisGroup =
   Nothing -- childElem = parentElem
-createPP {group = (MkGroup parentId m (Just group) r)} childId parentId (LeftGroup pathToChild) ThisGroup =
+createChild {group = (MkGroup parentId m (Just group) r)} {parentId=parentId} (LeftGroup pathToChild) ThisGroup =
   Just (ParentEndsHereChildOnLeft (LeftGroup pathToChild))
-createPP {group = (MkGroup parentId m l (Just group))} childId parentId (RightGroup pathToChild) ThisGroup =
+createChild {group = (MkGroup parentId m l (Just group))} {parentId=parentId} (RightGroup pathToChild) ThisGroup =
   Just (ParentEndsHereChildOnRight (RightGroup pathToChild))
-createPP {group = (MkGroup childId m (Just l) r)} childId parentId ThisGroup (LeftGroup _) =
+createChild {group = (MkGroup childId m (Just l) r)} {childId=childId} ThisGroup (LeftGroup _) =
   Nothing -- Child is above parent
-createPP {group = (MkGroup groupId m (Just l) r)} childId parentId (LeftGroup pathToChild) (LeftGroup pathToParent) =
-  map PrefixLeft (createPP childId parentId pathToChild pathToParent)
-createPP {group = (MkGroup groupId m (Just x) (Just group))} childId parentId (RightGroup _) (LeftGroup _) =
+createChild {group = (MkGroup groupId m (Just l) r)} (LeftGroup pathToChild) (LeftGroup pathToParent) =
+  map PrefixLeft (createChild pathToChild pathToParent)
+createChild {group = (MkGroup groupId m (Just l) (Just r))} (RightGroup _) (LeftGroup _) =
   Nothing -- Child goes right parent goes left
-createPP {group = (MkGroup childId m l (Just x))} childId parentId ThisGroup (RightGroup _) =
+createChild {group = (MkGroup childId m l (Just r))} {childId=childId} ThisGroup (RightGroup _) =
   Nothing -- Child is above parent
-createPP {group = (MkGroup groupId m (Just group) (Just x))} childId parentId (LeftGroup _) (RightGroup _) =
+createChild {group = (MkGroup groupId m (Just l) (Just r))} (LeftGroup _) (RightGroup _) =
   Nothing -- Child goes left parent goes right
-createPP {group = (MkGroup groupId m l (Just x))} childId parentId (RightGroup pathToChild) (RightGroup pathToParent) =
-  map PrefixRight (createPP childId parentId pathToChild pathToParent)
+createChild {group = (MkGroup groupId m l (Just r))} (RightGroup pathToChild) (RightGroup pathToParent) =
+  map PrefixRight (createChild pathToChild pathToParent)
 
 
-lemma_PP_trans : {a, b, c : GroupId}
-              -> {group : Group}
-              -> {aElem : Elem a group}
-              -> {bElem : Elem b group}
-              -> {cElem : Elem c group}
-              -> PP b a bElem aElem group
-              -> PP c b cElem bElem group
-              -> PP c a cElem aElem group
-lemma_PP_trans {group = (MkGroup a m' (Just x) r')} {aElem = ThisGroup} {bElem = bElem} {cElem = cElem} (ParentEndsHereChildOnLeft bElem) ppCB = ParentEndsHereChildOnLeft cElem
-lemma_PP_trans {group = (MkGroup a m' l' (Just x))} {aElem = ThisGroup} {bElem = bElem} {cElem = cElem} (ParentEndsHereChildOnRight bElem) ppCB = ParentEndsHereChildOnRight cElem
-lemma_PP_trans {group = (MkGroup h m (Just x) r)} {aElem = (LeftGroup parentElem)} {bElem = (LeftGroup childElem)} {cElem = (LeftGroup y)} (PrefixLeft pp) (PrefixLeft z) = PrefixLeft (lemma_PP_trans pp z)
-lemma_PP_trans {group = (MkGroup h m l (Just x))} {aElem = (RightGroup parentElem)} {bElem = (RightGroup childElem)} {cElem = (RightGroup y)} (PrefixRight pp) (PrefixRight z) = PrefixRight (lemma_PP_trans pp z)
+lemma_child_trans : {a, b, c : GroupId}
+                 -> {group : Group}
+                 -> {aElem : Elem a group}
+                 -> {bElem : Elem b group}
+                 -> {cElem : Elem c group}
+                 -> Child bElem aElem group
+                 -> Child cElem bElem group
+                 -> Child cElem aElem group
+lemma_child_trans {group = (MkGroup a m (Just l) r)} {aElem = ThisGroup} {bElem} {cElem} (ParentEndsHereChildOnLeft bElem) childCB = ParentEndsHereChildOnLeft cElem
+lemma_child_trans {group = (MkGroup a m l (Just r))} {aElem = ThisGroup} {bElem} {cElem} (ParentEndsHereChildOnRight bElem) childCB = ParentEndsHereChildOnRight cElem
+lemma_child_trans {group = (MkGroup gid m (Just l) r)} {aElem = (LeftGroup _)} {bElem = (LeftGroup _)} {cElem = (LeftGroup _)} (PrefixLeft prefixBA) (PrefixLeft prefixCB) = PrefixLeft (lemma_child_trans prefixBA prefixCB)
+lemma_child_trans {group = (MkGroup gid m l (Just r))} {aElem = (RightGroup _)} {bElem = (RightGroup _)} {cElem = (RightGroup _)} (PrefixRight prefixBA) (PrefixRight prefixCB) = PrefixRight (lemma_child_trans prefixBA prefixCB)
