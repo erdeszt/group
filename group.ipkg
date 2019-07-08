@@ -1,6 +1,6 @@
 package group
 
-main = Group
+main = GroupExample
 
 pkgs = contrib
      , pruviloj
@@ -11,8 +11,11 @@ modules = Group
         , GroupChild
         , GroupDistinctElem
         , GroupElem
+        , GroupExample
         , BinTreeIndex
         , BinTreeIndex2
         , ListIndex
         , RoseTreeIndex
+
+executable = groupexample.exe
 

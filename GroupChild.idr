@@ -38,6 +38,8 @@ createChild {group = (MkGroup groupId m (Just l) (Just r))} (LeftGroup _) (Right
 createChild {group = (MkGroup groupId m l (Just r))} (RightGroup pathToChild) (RightGroup pathToParent) =
   map PrefixRight (createChild pathToChild pathToParent)
 
+createChild' : {group : Group} -> {childId : GroupId} -> {parentId : GroupId} -> (childElem : Elem childId group) -> (parentElem : Elem parentId group) -> {auto prf : Child childElem parentElem group} -> Child childElem parentElem group
+createChild' childElem parentElem {prf} = prf
 
 lemma_child_trans : {a, b, c : GroupId}
                  -> {group : Group}
@@ -51,3 +53,9 @@ lemma_child_trans {group = (MkGroup a m (Just l) r)} {aElem = ThisGroup} {bElem}
 lemma_child_trans {group = (MkGroup a m l (Just r))} {aElem = ThisGroup} {bElem} {cElem} (ParentEndsHereChildOnRight bElem) childCB = ParentEndsHereChildOnRight cElem
 lemma_child_trans {group = (MkGroup gid m (Just l) r)} {aElem = (LeftGroup _)} {bElem = (LeftGroup _)} {cElem = (LeftGroup _)} (PrefixLeft prefixBA) (PrefixLeft prefixCB) = PrefixLeft (lemma_child_trans prefixBA prefixCB)
 lemma_child_trans {group = (MkGroup gid m l (Just r))} {aElem = (RightGroup _)} {bElem = (RightGroup _)} {cElem = (RightGroup _)} (PrefixRight prefixBA) (PrefixRight prefixCB) = PrefixRight (lemma_child_trans prefixBA prefixCB)
+
+showChild : {childElem : Elem childId group} -> {parentElem : Elem parentId group} -> Child childElem parentElem group -> String
+showChild (ParentEndsHereChildOnLeft leftElem) = "ParentEndsHereChildOnLeft (" <+> show leftElem <+> ")"
+showChild (ParentEndsHereChildOnRight rightElem) = "ParentEndsHereChildOnRight (" <+> show rightElem <+> ")"
+showChild (PrefixLeft leftChild) = "PrefixLeft (" <+> showChild leftChild <+> ")"
+showChild (PrefixRight rightChild) = "PrefixRight (" <+> showChild rightChild <+> ")"

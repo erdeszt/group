@@ -28,3 +28,11 @@ createElem (MkGroup currentGid member (Just left) (Just right)) gid =
     Yes Refl => Just ThisGroup
     No contra =>
       map LeftGroup (createElem left gid) <|> map RightGroup (createElem right gid)
+
+createElem' : (group : Group) -> (groupId : GroupId) -> {auto prf : Elem groupId group} -> Elem groupId group
+createElem' group groupId {prf} = prf
+
+Show (Elem gid group) where
+  show ThisGroup = "ThisGroup"
+  show (LeftGroup lg) = "LeftGroup (" <+> show lg <+> ")"
+  show (RightGroup rg) = "RightGroup (" <+> show rg <+> ")"
