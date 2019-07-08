@@ -14,7 +14,7 @@ grant : {groupId : GroupId}
       -> (userId : UserId)
       -> (group' : Group ** (Elem groupId group', HasAccess groupId userId group'))
 grant (MkGroup currentGid member left right) ThisGroup newMember =
-  ((MkGroup currentGid (Just newMember) left right) ** (ThisGroup, DirectAccess))
+  ((MkGroup currentGid (Just newMember) left right) ** (ThisGroup, AccessToGroup))
 grant (MkGroup currentGid member (Just left) right) (LeftGroup elem) newMember =
   case grant left elem newMember of
     (group ** (elemPrf, memberPrf)) =>
