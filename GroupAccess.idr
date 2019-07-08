@@ -19,8 +19,13 @@ data HasDirectAccess : GroupId -> UserId -> Group -> Type where
   DirectAccessOnRight : HasDirectAccess gid uid group -> HasDirectAccess gid uid (MkGroup gid' member left (Just group))
 
 -- TODO: HasAccess groupId -> HasDirectAccess groupId | (HasDirectAccess groupId' & Child groupId groupId')
--- TODO: HasAccess groupId group -> Elem groupId group
--- TODO: HasAccess groupId group -> Child groupId (group.id)
+
+hasAccessToElem : HasAccess groupId userId group -> Elem groupId group
+hasAccessToElem AccessToGroup = ThisGroup
+hasAccessToElem (AccessToParentLeft leftElem) = LeftGroup leftElem
+hasAccessToElem (AccessToParentRight rightElem) = RightGroup rightElem
+hasAccessToElem (AccessToLeft leftAccess) = LeftGroup (hasAccessToElem leftAccess)
+hasAccessToElem (AccessToRight rightAccess) = RightGroup (hasAccessToElem rightAccess)
 
 access : {groupId : GroupId}
       -> (group : Group)
