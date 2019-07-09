@@ -4,6 +4,7 @@ import Group
 import GroupAccess
 import GroupChild
 import GroupElem
+import GroupDistinctElem
 
 %default total
 %access public export
@@ -32,4 +33,12 @@ grant (MkGroup currentGid member left (Just right)) (RightGroup elem) newMember 
 --   * HasDirectAccess g u group -> Child g' g -> HasAccess g' u group
 --       * Or HasDirectAccess g' u group
 --   * HasDirectAccess g u group -> HasAccess g u group
+
+-- NOTE: Issue is that no connection between HasAccess and Child
+--       so the situation like this can exists:
+-- accessExtendsToChildren {childElem = (LeftGroup x)} {groupElem = ThisGroup} {distinct = LeftAndThis} {userId} {group=(MkGroup groupId m' (Just group1) r')} (AccessToLeft y) (ParentEndsHereChildOnLeft (LeftGroup x)) = ?wat
+--  this means that the access is on the left but according to `distinct`, the child is on the left and parent ends here(but we should have access to parent (which is on the left side == CONTRADICTION))
+-- Without distinct elem the usual situation of childElem == groupElem arise
+-- So Child is probably still not carrying enough information to
+-- provably prevent the above to situation
 
