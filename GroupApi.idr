@@ -26,6 +26,8 @@ grant (MkGroup gid m l (Just right)) (RightGroup elem) userId with (grant right 
 {- EXPERIMENTAL: -}
 
 -- Ideas:
---   * HasAccess g u group -> Either (HasDirectAccess g u group) (HasDirectAccess g' u group, Child g g') -- or somethign like this with Elem
---   * HasDirectAccess g u group -> Child g' g -> HasAccess g' u group
---       * Or HasDirectAccess g' u group
+--   * HasDirectAccess g u elem group -> Child g' g group -> HasAccess g' u elem' group
+--     * Direct access means access to the children
+--   * HasAccess g u elem group -> Either (HasDirectAccess g u elem group) (HasDirectAccess g' u elem' group, Child g g' group)
+--     * Access to g is either DirectAccess to g or direct access to one of
+--       g's parents
