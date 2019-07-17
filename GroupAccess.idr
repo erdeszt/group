@@ -50,6 +50,9 @@ accessExtendsToChildren {group = (MkGroup h (Just u) l (Just right))} {parentEle
 accessExtendsToChildren {group = (MkGroup h m (Just x) r)} {parentElem = (LeftGroup elem)} {childElem = (LeftGroup z)} (AccessOnLeft y) (PrefixLeft w) = AccessOnLeft (accessExtendsToChildren y w)
 accessExtendsToChildren {group = (MkGroup h m l (Just x))} {parentElem = (RightGroup elem)} {childElem = (RightGroup z)} (AccessOnRight y) (PrefixRight w) = AccessOnRight (accessExtendsToChildren y w)
 
+directAccessToElem : {elem : Elem g group} -> HasDirectAccess g u elem group -> Elem g group
+directAccessToElem directAccess = accessToElem (directAccessToAccess directAccess)
+
 directAccessExtendsToChildren : {g, g' : GroupId}
                              -> {u : UserId}
                              -> {group : Group}
