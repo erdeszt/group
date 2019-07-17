@@ -45,8 +45,10 @@ main = do
   let child8Of4 = createChild' elem8 elem4
   let child8Of2 = lemma_child_trans child4Of2 child8Of4
   let (treeWAccessToElem2ForUser1 ** (elem2', userHasAccessTo2)) = grant exampleGroupTree elem2 (MkUID 1)
+  let (treeWAccessToElem2ForUser1_HA ** userHasAccessTo2_HA) = grantHA exampleGroupTree elem2 (MkUID 1)
   putStrLn (showChild child4Of2)
   putStrLn (showChild child8Of4)
   putStrLn (showChild child8Of2)
   printLn elem2
   printLn userHasAccessTo2
+  putStrLn (showHA userHasAccessTo2_HA)

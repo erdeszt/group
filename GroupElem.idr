@@ -5,7 +5,7 @@ import Group
 %default total
 %access public export
 
-data Elem : GroupId -> Group -> Type where
+data Elem : GroupId -> (group : Group) -> Type where
   ThisGroup : Elem g (MkGroup g m l r)
   LeftGroup : Elem g group -> Elem g (MkGroup h m (Just group) r)
   RightGroup : Elem g group -> Elem g (MkGroup h m l (Just group))
@@ -32,7 +32,10 @@ createElem (MkGroup currentGid member (Just left) (Just right)) gid =
 createElem' : (group : Group) -> (groupId : GroupId) -> {auto prf : Elem groupId group} -> Elem groupId group
 createElem' group groupId {prf} = prf
 
+showElem : Elem groupId group -> String
+showElem ThisGroup = "ThisGroup"
+showElem (LeftGroup lg) = "LeftGroup (" <+> showElem lg <+> ")"
+showElem (RightGroup rg) = "RightGroup (" <+> showElem rg <+> ")"
+
 Show (Elem gid group) where
-  show ThisGroup = "ThisGroup"
-  show (LeftGroup lg) = "LeftGroup (" <+> show lg <+> ")"
-  show (RightGroup rg) = "RightGroup (" <+> show rg <+> ")"
+  show = showElem

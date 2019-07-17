@@ -13,17 +13,24 @@ data HasAccess : GroupId -> UserId -> Group -> Type where
   AccessToLeft : HasAccess gid uid group -> HasAccess gid uid (MkGroup gid' member (Just group) right)
   AccessToRight : HasAccess gid uid group -> HasAccess gid uid (MkGroup gid' member left (Just group))
 
+data HA : (groupId : GroupId) -> Elem groupId group -> UserId -> Group -> Type where
+  ATG : HA groupId ThisGroup userId (MkGroup groupId (Just userId) l r)
+  ATPL : (elem : Elem groupId left) -> HA groupId (LeftGroup elem) userId (MkGroup gid (Just userId) (Just left) r)
+  ATPR : (elem : Elem groupId right) -> HA groupId (RightGroup elem) userId (MkGroup gid (Just userId) l (Just right))
+  ATL : HA groupId elem userId left -> HA groupId (LeftGroup elem) userId (MkGroup gid m (Just left) r)
+  ATR : HA groupId elem userId right -> HA groupId (RightGroup elem) userId (MkGroup gid m l (Just right))
+
 data HasDirectAccess : Elem groupId group -> UserId -> Group -> Type where
   DirectAccessToGroup : HasDirectAccess ThisGroup userId (MkGroup groupId (Just userId) l r)
   DirectAccessOnLeft : HasDirectAccess elem userId group -> HasDirectAccess (LeftGroup elem) userId (MkGroup gid m (Just group) r)
   DirectAccessOnRight : HasDirectAccess elem userId group -> HasDirectAccess (RightGroup elem) userId (MkGroup gid m l (Just group))
 
-hasAccessToElem : HasAccess groupId userId group -> Elem groupId group
-hasAccessToElem AccessToGroup = ThisGroup
-hasAccessToElem (AccessToParentLeft leftElem) = LeftGroup leftElem
-hasAccessToElem (AccessToParentRight rightElem) = RightGroup rightElem
-hasAccessToElem (AccessToLeft leftAccess) = LeftGroup (hasAccessToElem leftAccess)
-hasAccessToElem (AccessToRight rightAccess) = RightGroup (hasAccessToElem rightAccess)
+accessToElem : HasAccess groupId userId group -> Elem groupId group
+accessToElem AccessToGroup = ThisGroup
+accessToElem (AccessToParentLeft leftElem) = LeftGroup leftElem
+accessToElem (AccessToParentRight rightElem) = RightGroup rightElem
+accessToElem (AccessToLeft leftAccess) = LeftGroup (accessToElem leftAccess)
+accessToElem (AccessToRight rightAccess) = RightGroup (accessToElem rightAccess)
 
 directAccess : {groupId : GroupId}
             -> (group : Group)
@@ -40,14 +47,41 @@ directAccess (MkGroup groupId member l r) ThisGroup userId =
 directAccess (MkGroup gid m (Just l) r) (LeftGroup elem) userId = map DirectAccessOnLeft (directAccess l elem userId)
 directAccess (MkGroup gid m l (Just r)) (RightGroup elem) userId = map DirectAccessOnRight (directAccess r elem userId)
 
-hasDirectAccessToHasAccess : {groupId : GroupId}
+directAccessToAccess : {groupId : GroupId}
                           -> {userId : UserId}
                           -> {group : Group}
                           -> {elem : Elem groupId group}
                           -> HasDirectAccess elem userId group -> HasAccess groupId userId group
-hasDirectAccessToHasAccess {group = (MkGroup groupId (Just userId) l r)} DirectAccessToGroup = AccessToGroup
-hasDirectAccessToHasAccess {group = (MkGroup gid m (Just l) r)} (DirectAccessOnLeft directAccess) = AccessToLeft (hasDirectAccessToHasAccess directAccess)
-hasDirectAccessToHasAccess {group = (MkGroup gid m l (Just r))} (DirectAccessOnRight directAccess) = AccessToRight (hasDirectAccessToHasAccess directAccess)
+directAccessToAccess {group = (MkGroup groupId (Just userId) l r)} DirectAccessToGroup = AccessToGroup
+directAccessToAccess {group = (MkGroup gid m (Just l) r)} (DirectAccessOnLeft directAccess) = AccessToLeft (directAccessToAccess directAccess)
+directAccessToAccess {group = (MkGroup gid m l (Just r))} (DirectAccessOnRight directAccess) = AccessToRight (directAccessToAccess directAccess)
+
+ha : {groupId : GroupId}
+  -> (group : Group)
+  -> (elem : Elem groupId group)
+  -> (userId : UserId)
+  -> Maybe (HA groupId elem userId group)
+ha (MkGroup groupId member l r) ThisGroup userId =
+  case member of
+    Nothing => Nothing
+    Just memberId =>
+      case decEq userId memberId of
+        No contra => Nothing
+        Yes Refl => Just ATG
+ha (MkGroup gid member (Just left) r) (LeftGroup elem) userId =
+  case member of
+    Nothing => Nothing
+    Just memberId =>
+      case decEq userId memberId of
+        No contra => map ATL (ha left elem userId)
+        Yes Refl => Just (ATPL elem)
+ha (MkGroup gid member l (Just right)) (RightGroup elem) userId =
+  case member of
+    Nothing => Nothing
+    Just memberId =>
+      case decEq userId memberId of
+        No contra => map ATR (ha right elem userId)
+        Yes Refl => Just (ATPR elem)
 
 access : {groupId : GroupId}
       -> (group : Group)
@@ -94,10 +128,24 @@ access {groupId} (MkGroup groupId' member left (Just right)) (RightGroup rightEl
               Nothing => Nothing
               Just rightElem => Just (AccessToParentRight rightElem)
 
-Show (HasAccess groupId userId group) where
-  show  AccessToGroup = "AccessToGroup"
-  show (AccessToParentLeft leftElem) = "AccessToParentLeft (" <+> show leftElem <+> ")"
-  show (AccessToParentRight rightElem) = "AccessToParentRight (" <+> show rightElem <+> ")"
+showHA : HA groupId elem userId group -> String
+showHA ATG = "AccessToGroup"
+showHA (ATPL elem) = "AccessToParentLeft (" <+> show elem <+> ")"
+showHA (ATPR elem) = "AccessToParentRight (" <+> show elem <+> ")"
+showHA (ATL access) = "AccessToLeft (" <+> showHA access <+> ")"
+showHA (ATR access) = "AccessToRight (" <+> showHA access <+> ")"
 
-  show (AccessToLeft leftAccess) = "AccessToLeft (" <+> show leftAccess <+> ")"
-  show (AccessToRight rightAccess) = "AccessToRight (" <+> show rightAccess <+> ")"
+showDirectAccess : HasDirectAccess elem userId group -> String
+showDirectAccess DirectAccessToGroup = "DirectAccessToGroup"
+showDirectAccess (DirectAccessOnLeft elem) = "DirectAccessOnLeft (" <+> showDirectAccess elem <+> ")"
+showDirectAccess (DirectAccessOnRight elem) = "DirectAccessOnRight (" <+> showDirectAccess elem <+> ")"
+
+showHasAccess : HasAccess groupId userId group -> String
+showHasAccess AccessToGroup = "AccessToGroup"
+showHasAccess (AccessToParentLeft leftElem) = "AccessToParentLeft (" <+> showElem leftElem <+> ")"
+showHasAccess (AccessToParentRight rightElem) = "AccessToParentRight (" <+> showElem rightElem <+> ")"
+showHasAccess (AccessToLeft leftAccess) = "AccessToLeft (" <+> showHasAccess leftAccess <+> ")"
+showHasAccess (AccessToRight rightAccess) = "AccessToRight (" <+> showHasAccess rightAccess <+> ")"
+
+Show (HasAccess groupId userId group) where
+  show = showHasAccess
