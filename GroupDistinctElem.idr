@@ -1,7 +1,9 @@
 module GroupDistinctElem
 
+import Bifunctor
 import Group
 import GroupElem
+import Or
 
 %default total
 %access public export
@@ -40,3 +42,16 @@ distinctElemSymm {aElem = (LeftGroup _)} {bElem = (RightGroup _)} LeftAndRight =
 distinctElemSymm {aElem = (RightGroup _)} {bElem = ThisGroup} RightAndThis = ThisAndRight
 distinctElemSymm {aElem = (RightGroup _)} {bElem = (LeftGroup _)} RightAndLeft = LeftAndRight
 distinctElemSymm {aElem = (RightGroup _)} {bElem = (RightGroup _)} (DifferInChildRR diff) = DifferInChildRR (distinctElemSymm diff)
+
+distinctElemToTopElem : {aElem : Elem a group}
+                     -> {bElem : Elem b group}
+                     -> DistinctElem aElem bElem
+                     -> Or (Elem a group) (Elem b group)
+distinctElemToTopElem ThisAndLeft = OnlyLeft ThisGroup
+distinctElemToTopElem ThisAndRight = OnlyLeft ThisGroup
+distinctElemToTopElem LeftAndThis = OnlyRight ThisGroup
+distinctElemToTopElem (DifferInChildLL diff) = bimap LeftGroup LeftGroup (distinctElemToTopElem diff)
+distinctElemToTopElem {aElem = LeftGroup aElem'} {bElem = RightGroup bElem'} LeftAndRight = Both (LeftGroup aElem') (RightGroup bElem')
+distinctElemToTopElem RightAndThis = OnlyRight ThisGroup
+distinctElemToTopElem {aElem = RightGroup aElem'} {bElem = LeftGroup bElem'} RightAndLeft = Both (RightGroup aElem') (LeftGroup bElem')
+distinctElemToTopElem (DifferInChildRR diff) = bimap RightGroup RightGroup (distinctElemToTopElem diff)

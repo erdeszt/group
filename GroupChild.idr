@@ -46,6 +46,28 @@ lemma_child_trans {a=a} {aElem = ThisGroup} {bElem = (RightGroup bElemRec)} {cEl
 lemma_child_trans {aElem = (LeftGroup aElemRec)} {bElem = (LeftGroup bElemRec)} {cElem = (LeftGroup cElemRec)} {group = (MkGroup gid m (Just l) r)} (PrefixLeft childBARec) (PrefixLeft childCBRec) = PrefixLeft (lemma_child_trans childBARec childCBRec)
 lemma_child_trans {aElem = (RightGroup aElemRec)} {bElem = (RightGroup bElemRec)} {cElem = (RightGroup cElemRec)} {group = (MkGroup gid m l (Just r))} (PrefixRight childBARec) (PrefixRight childCBRec) = PrefixRight (lemma_child_trans childBARec childCBRec)
 
+childToParentElem : {childId, parentId : GroupId}
+                 -> {group : Group}
+                 -> {childElem : Elem childId group}
+                 -> {parentElem : Elem parentId group}
+                 -> Child childElem parentElem group
+                 -> Elem parentId group
+childToParentElem (ParentEndsHereChildOnLeft childElem) = ThisGroup
+childToParentElem (ParentEndsHereChildOnRight childElem) = ThisGroup
+childToParentElem (PrefixLeft prefix) = LeftGroup (childToParentElem prefix)
+childToParentElem (PrefixRight prefix) = RightGroup (childToParentElem prefix)
+
+childToChildElem : {childId, parentId : GroupId}
+                -> {group : Group}
+                -> {childElem : Elem childId group}
+                -> {parentElem : Elem parentId group}
+                -> Child childElem parentElem group
+                -> Elem childId group
+childToChildElem (ParentEndsHereChildOnLeft childElem) = LeftGroup childElem
+childToChildElem (ParentEndsHereChildOnRight childElem) = RightGroup childElem
+childToChildElem (PrefixLeft prefix) = LeftGroup (childToChildElem prefix)
+childToChildElem (PrefixRight prefix) = RightGroup (childToChildElem prefix)
+
 showChild : {childElem : Elem childId group} -> {parentElem : Elem parentId group} -> Child childElem parentElem group -> String
 showChild (ParentEndsHereChildOnLeft leftElem) = "ParentEndsHereChildOnLeft (" <+> show leftElem <+> ")"
 showChild (ParentEndsHereChildOnRight rightElem) = "ParentEndsHereChildOnRight (" <+> show rightElem <+> ")"

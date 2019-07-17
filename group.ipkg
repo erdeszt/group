@@ -16,6 +16,8 @@ modules = Group
         , BinTreeIndex2
         , ListIndex
         , RoseTreeIndex
+        , Bifunctor
+        , Or
 
 executable = groupexample.exe
 
