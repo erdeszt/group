@@ -26,10 +26,10 @@ accessToElem (AccessOnLeft leftAccess) = LeftGroup (accessToElem leftAccess)
 accessToElem (AccessOnRight rightAccess) = RightGroup (accessToElem rightAccess)
 
 directAccessToAccess : {groupId : GroupId}
-                     -> {userId : UserId}
-                     -> {group : Group}
-                     -> {elem : Elem groupId group}
-                     -> HasDirectAccess groupId userId elem group -> HasAccess groupId userId elem group
+                    -> {userId : UserId}
+                    -> {group : Group}
+                    -> {elem : Elem groupId group}
+                    -> HasDirectAccess groupId userId elem group -> HasAccess groupId userId elem group
 directAccessToAccess {group = (MkGroup groupId (Just userId) l r)} DirectAccessToGroup = AccessToGroup
 directAccessToAccess {group = (MkGroup gid m (Just l) r)} (DirectAccessOnLeft directAccess) = AccessOnLeft (directAccessToAccess directAccess)
 directAccessToAccess {group = (MkGroup gid m l (Just r))} (DirectAccessOnRight directAccess) = AccessOnRight (directAccessToAccess directAccess)
