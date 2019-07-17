@@ -11,10 +11,10 @@ import GroupDistinctElem
 
 
 grant : {groupId : GroupId}
-      -> (group : Group)
-      -> (elem : Elem groupId group)
-      -> (userId : UserId)
-      -> (group' : Group ** HasDirectAccess groupId userId elem group')
+     -> (group : Group)
+     -> (elem : Elem groupId group)
+     -> (userId : UserId)
+     -> (group' : Group ** HasDirectAccess groupId userId elem group')
 grant (MkGroup groupId m l r) ThisGroup userId =
   (MkGroup groupId (Just userId) l r ** DirectAccessToGroup)
 grant (MkGroup gid m (Just left) r) (LeftGroup elem) userId with (grant left elem userId)
