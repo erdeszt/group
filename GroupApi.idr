@@ -22,12 +22,22 @@ grant (MkGroup gid m (Just left) r) (LeftGroup elem) userId with (grant left ele
 grant (MkGroup gid m l (Just right)) (RightGroup elem) userId with (grant right elem userId)
   | (group' ** access) = (MkGroup gid m l (Just group') ** DirectAccessOnRight access)
 
+hasDirectAccessExtends : {g, g' : GroupId}
+                      -> {u : UserId}
+                      -> {group : Group}
+                      -> {childElem : Elem g' group}
+                      -> {parentElem : Elem g group}
+                      -> HasDirectAccess g u parentElem group
+                      -> Child childElem parentElem group
+                      -> HasAccess g' u childElem group
+hasDirectAccessExtends {group = (MkGroup g (Just u) (Just left) r)} DirectAccessToGroup (ParentEndsHereChildOnLeft elem) = AccessToParentLeft elem
+hasDirectAccessExtends {group = (MkGroup g (Just u) l (Just right))} DirectAccessToGroup (ParentEndsHereChildOnRight elem) = AccessToParentRight elem
+hasDirectAccessExtends {group = (MkGroup gid m (Just left) r)} (DirectAccessOnLeft directAccess) (PrefixLeft child) = AccessOnLeft (hasDirectAccessExtends directAccess child)
+hasDirectAccessExtends {group = (MkGroup gid m l (Just right))} (DirectAccessOnRight directAccess) (PrefixRight child) = AccessOnRight (hasDirectAccessExtends directAccess child)
 
 {- EXPERIMENTAL: -}
 
 -- Ideas:
---   * HasDirectAccess g u elem group -> Child g' g group -> HasAccess g' u elem' group
---     * Direct access means access to the children
 --   * HasAccess g u elem group -> Either (HasDirectAccess g u elem group) (HasDirectAccess g' u elem' group, Child g g' group)
 --     * Access to g is either DirectAccess to g or direct access to one of
 --       g's parents
