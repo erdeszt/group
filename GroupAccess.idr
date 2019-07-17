@@ -76,10 +76,10 @@ createDirectAccess (MkGroup groupId member l r) ThisGroup userId =
 createDirectAccess (MkGroup gid m (Just l) r) (LeftGroup elem) userId = map DirectAccessOnLeft (createDirectAccess l elem userId)
 createDirectAccess (MkGroup gid m l (Just r)) (RightGroup elem) userId = map DirectAccessOnRight (createDirectAccess r elem userId)
 
-showDirectAccess : HasDirectAccess groupId userId elem group -> String
-showDirectAccess DirectAccessToGroup = "DirectAccessToGroup"
-showDirectAccess (DirectAccessOnLeft elem) = "DirectAccessOnLeft (" <+> showDirectAccess elem <+> ")"
-showDirectAccess (DirectAccessOnRight elem) = "DirectAccessOnRight (" <+> showDirectAccess elem <+> ")"
+showHasDirectAccess : HasDirectAccess groupId userId elem group -> String
+showHasDirectAccess DirectAccessToGroup = "DirectAccessToGroup"
+showHasDirectAccess (DirectAccessOnLeft elem) = "DirectAccessOnLeft (" <+> showHasDirectAccess elem <+> ")"
+showHasDirectAccess (DirectAccessOnRight elem) = "DirectAccessOnRight (" <+> showHasDirectAccess elem <+> ")"
 
 showHasAccess : HasAccess groupId userId elem group -> String
 showHasAccess AccessToGroup = "AccessToGroup"
