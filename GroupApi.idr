@@ -29,9 +29,9 @@ grant (MkGroup currentGid member left (Just right)) (RightGroup elem) newMember 
 {- EXPERIMENTAL: -}
 
 -- Ideas:
+--   * Access in terms of Elem
 --   * HasAccess g u group -> Either (HasDirectAccess g u group) (HasDirectAccess g' u group, Child g g') -- or somethign like this with Elem
 --   * HasDirectAccess g u group -> Child g' g -> HasAccess g' u group
 --       * Or HasDirectAccess g' u group
 --   * HasDirectAccess g u group -> HasAccess g u group
 --   * childToDistinctElem
-
