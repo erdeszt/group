@@ -9,35 +9,18 @@ import GroupDistinctElem
 %default total
 %access public export
 
-grant : {groupId : GroupId}
-      -> (group : Group)
-      -> Elem groupId group
-      -> (userId : UserId)
-      -> (group' : Group ** (Elem groupId group', HasAccess groupId userId group'))
-grant (MkGroup currentGid member left right) ThisGroup newMember =
-  ((MkGroup currentGid (Just newMember) left right) ** (ThisGroup, AccessToGroup))
-grant (MkGroup currentGid member (Just left) right) (LeftGroup elem) newMember =
-  case grant left elem newMember of
-    (group ** (elemPrf, memberPrf)) =>
-      ((MkGroup currentGid member (Just group) right) ** (LeftGroup elemPrf, AccessToLeft memberPrf))
-grant (MkGroup currentGid member left (Just right)) (RightGroup elem) newMember =
-  case grant right elem newMember of
-    (group ** (elemPrf, memberPrf)) =>
-      ((MkGroup currentGid member left (Just group)) ** (RightGroup elemPrf, AccessToRight memberPrf))
 
-grantHA : {groupId : GroupId}
+grant : {groupId : GroupId}
       -> (group : Group)
       -> (elem : Elem groupId group)
       -> (userId : UserId)
-      -> (group' : Group ** HA groupId elem userId group')
-grantHA (MkGroup groupId m l r) ThisGroup userId =
-  (MkGroup groupId (Just userId) l r ** ATG)
-grantHA (MkGroup gid m (Just left) r) (LeftGroup elem) userId with (grantHA left elem userId)
-  | (group' ** access) = (MkGroup gid m (Just group') r ** ATL access)
-grantHA (MkGroup gid m l (Just right)) (RightGroup elem) userId with (grantHA right elem userId)
-  | (group' ** access) = (MkGroup gid m l (Just group') ** ATR access)
-
-
+      -> (group' : Group ** HasAccess userId groupId elem group')
+grant (MkGroup groupId m l r) ThisGroup userId =
+  (MkGroup groupId (Just userId) l r ** AccessToGroup)
+grant (MkGroup gid m (Just left) r) (LeftGroup elem) userId with (grant left elem userId)
+  | (group' ** access) = (MkGroup gid m (Just group') r ** AccessToLeft access)
+grant (MkGroup gid m l (Just right)) (RightGroup elem) userId with (grant right elem userId)
+  | (group' ** access) = (MkGroup gid m l (Just group') ** AccessToRight access)
 
 
 {- EXPERIMENTAL: -}
