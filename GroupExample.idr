@@ -6,6 +6,15 @@ import GroupApi
 import GroupChild
 import GroupElem
 
+
+-- Example tree:
+--         1
+--       /   \
+--      2     3
+--     / \   / \
+--    4   5 6   7
+--   / \
+--  8   9
 exampleGroupTree : Group
 exampleGroupTree =
   MkGroup (MkGID 1) Nothing
@@ -38,15 +47,20 @@ exampleGroupTree =
 
 main : IO ()
 main = do
-  let elem2 = createElem' exampleGroupTree (MkGID 2)
-  let elem4 = createElem' exampleGroupTree (MkGID 4)
-  let elem8 = createElem' exampleGroupTree (MkGID 8)
-  let child4Of2 = createChild' elem4 elem2
-  let child8Of4 = createChild' elem8 elem4
+  (Just exampleElem2) <- pure $ createElem exampleGroupTree (MkGID 2)
+  let (tree' ** (elem2 ** accessTo2)) = grant exampleGroupTree exampleElem2 (MkUID 1)
+  (Just elem4) <- pure $ createElem tree' (MkGID 4)
+  (Just elem8) <- pure $ createElem tree' (MkGID 8)
+  (Just child4Of2) <- pure $ createChild elem4 elem2
+  (Just child8Of4) <- pure $ createChild elem8 elem4
   let child8Of2 = lemma_child_trans child4Of2 child8Of4
-  let (treeWAccessToElem2ForUser1 ** userHasAccessTo2) = grant exampleGroupTree elem2 (MkUID 1)
+  let accessTo4 = directAccessExtendsToChildren accessTo2 child4Of2
+  let accessTo8 = directAccessExtendsToChildren accessTo2 child8Of2
+  let accessTo8' = accessExtendsToChildren accessTo4 child8Of4
   putStrLn (showChild child4Of2)
   putStrLn (showChild child8Of4)
   putStrLn (showChild child8Of2)
-  printLn elem2
-  putStrLn (showHasDirectAccess userHasAccessTo2)
+  putStrLn (showHasDirectAccess accessTo2)
+  putStrLn (showHasAccess accessTo4)
+  putStrLn (showHasAccess accessTo8)
+  putStrLn (showHasAccess accessTo8')

@@ -46,9 +46,6 @@ lemma_child_trans {a=a} {aElem = ThisGroup} {bElem = (RightGroup bElemRec)} {cEl
 lemma_child_trans {aElem = (LeftGroup aElemRec)} {bElem = (LeftGroup bElemRec)} {cElem = (LeftGroup cElemRec)} {group = (MkGroup gid m (Just l) r)} (PrefixLeft childBARec) (PrefixLeft childCBRec) = PrefixLeft (lemma_child_trans childBARec childCBRec)
 lemma_child_trans {aElem = (RightGroup aElemRec)} {bElem = (RightGroup bElemRec)} {cElem = (RightGroup cElemRec)} {group = (MkGroup gid m l (Just r))} (PrefixRight childBARec) (PrefixRight childCBRec) = PrefixRight (lemma_child_trans childBARec childCBRec)
 
-createChild' : {group : Group} -> {childId : GroupId} -> {parentId : GroupId} -> (childElem : Elem childId group) -> (parentElem : Elem parentId group) -> {auto prf : Child childElem parentElem group} -> Child childElem parentElem group
-createChild' childElem parentElem {prf} = prf
-
 showChild : {childElem : Elem childId group} -> {parentElem : Elem parentId group} -> Child childElem parentElem group -> String
 showChild (ParentEndsHereChildOnLeft leftElem) = "ParentEndsHereChildOnLeft (" <+> show leftElem <+> ")"
 showChild (ParentEndsHereChildOnRight rightElem) = "ParentEndsHereChildOnRight (" <+> show rightElem <+> ")"

@@ -29,9 +29,6 @@ createElem (MkGroup currentGid member (Just left) (Just right)) gid =
     No contra =>
       map LeftGroup (createElem left gid) <|> map RightGroup (createElem right gid)
 
-createElem' : (group : Group) -> (groupId : GroupId) -> {auto prf : Elem groupId group} -> Elem groupId group
-createElem' group groupId {prf} = prf
-
 showElem : Elem groupId group -> String
 showElem ThisGroup = "ThisGroup"
 showElem (LeftGroup lg) = "LeftGroup (" <+> showElem lg <+> ")"
