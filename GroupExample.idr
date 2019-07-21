@@ -48,7 +48,7 @@ exampleGroupTree =
 main : IO ()
 main = do
   (Just exampleElem2) <- pure $ createElem exampleGroupTree (MkGID 2)
-  let (tree' ** (elem2 ** accessTo2)) = grant exampleGroupTree exampleElem2 (MkUID 1)
+  let (tree' ** (elem2 ** accessTo2)) = grantUnchecked exampleGroupTree exampleElem2 (MkUID 1)
   (Just elem4) <- pure $ createElem tree' (MkGID 4)
   (Just elem8) <- pure $ createElem tree' (MkGID 8)
   (Just child4Of2) <- pure $ createChild elem4 elem2

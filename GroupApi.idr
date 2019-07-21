@@ -7,6 +7,7 @@ import GroupElem
 
 %default total
 
+export -- TODO: Update example and don't export this
 grantUnchecked : {groupId : GroupId}
               -> (group : Group)
               -> (elem : Elem groupId group)
@@ -73,3 +74,5 @@ grant userId groupId group (MkToken grantingUser isAdmin) =
 --   * HasAccess g u elem group -> Either (HasDirectAccess g u elem group) (HasDirectAccess g' u elem' group, Child g g' group)
 --     * Access to g is either DirectAccess to g or direct access to one of
 --       g's parents
+--   * Refine token based high level api
+--     * Fix example, don't export grantUnchecked
