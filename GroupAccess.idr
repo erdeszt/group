@@ -7,12 +7,48 @@ import GroupElem
 %default total
 %access public export
 
+record AccessToken where
+  constructor MkToken
+  userId : UserId
+  isAdmin : Bool
+
+data TokenAccess : (token : AccessToken) -> (groupId : GroupId) -> Elem groupId group -> Group -> Type where
+  AdminAccess : TokenAccess (MkToken userId True) groupId ThisGroup (MkGroup gid m l r)
+  TokenAccessToGroup : TokenAccess (MkToken userId isAdmin) groupId ThisGroup (MkGroup groupId (Just userId) l r)
+  TokenAccessToParentLeft : (elem : Elem groupId left) -> TokenAccess (MkToken userId isAdmin) groupId (LeftGroup elem) (MkGroup gid (Just userId) (Just left) r)
+  TokenAccessToParentRight : (elem : Elem groupId right) -> TokenAccess (MkToken userId isAdmin) groupId (RightGroup elem) (MkGroup gid (Just userId) l (Just right))
+  TokenAccessOnLeft : TokenAccess token groupId elem left -> TokenAccess token groupId (LeftGroup elem) (MkGroup gid m (Just left) r)
+  TokenAccessOnRight : TokenAccess token groupId elem right -> TokenAccess token groupId (RightGroup elem)  (MkGroup gid m l (Just right))
+
+data UserToken : UserId -> AccessToken -> Type where
+  MkUserToken : (userId : UserId) -> UserToken userId (MkToken userId isAdmin)
+
 data HasAccess : (groupId : GroupId) -> UserId -> Elem groupId group -> Group -> Type where
   AccessToGroup : HasAccess groupId userId ThisGroup (MkGroup groupId (Just userId) l r)
   AccessToParentLeft : (elem : Elem groupId left) -> HasAccess groupId userId (LeftGroup elem) (MkGroup gid (Just userId) (Just left) r)
   AccessToParentRight : (elem : Elem groupId right) -> HasAccess groupId userId (RightGroup elem) (MkGroup gid (Just userId) l (Just right))
   AccessOnLeft : HasAccess groupId userId elem left -> HasAccess groupId userId (LeftGroup elem) (MkGroup gid m (Just left) r)
   AccessOnRight : HasAccess groupId userId elem right -> HasAccess groupId userId (RightGroup elem)  (MkGroup gid m l (Just right))
+
+-- Note: No mapping for AdminAccess
+tokenAccessToHasAccess : {token : AccessToken} -> {prf : UserToken userId token} -> TokenAccess token groupId elem group -> Maybe (HasAccess groupId userId elem group)
+tokenAccessToHasAccess {token = (MkToken userId True)} {prf = prf} AdminAccess = Nothing
+tokenAccessToHasAccess {token = (MkToken userId isAdmin)} {prf = (MkUserToken userId)} TokenAccessToGroup = Just AccessToGroup
+tokenAccessToHasAccess {token = (MkToken userId isAdmin)} {prf = (MkUserToken userId)} (TokenAccessToParentLeft elem) =
+  Just (AccessToParentLeft elem)
+tokenAccessToHasAccess {token = (MkToken userId isAdmin)} {prf = (MkUserToken userId)} (TokenAccessToParentRight elem) =
+  Just (AccessToParentRight elem)
+tokenAccessToHasAccess {token = token} {prf = prf} (TokenAccessOnLeft tokenAccess) =
+  map AccessOnLeft (tokenAccessToHasAccess {token=token} {prf=prf} tokenAccess)
+tokenAccessToHasAccess {token = token} {prf = prf} (TokenAccessOnRight tokenAccess) =
+  map AccessOnRight (tokenAccessToHasAccess {token=token} {prf=prf} tokenAccess)
+
+accessToTokenAccess : {token : AccessToken} -> {prf : UserToken userId token} -> HasAccess groupId userId elem group -> TokenAccess token groupId elem group
+accessToTokenAccess {token = (MkToken userId isAdmin)} {prf = (MkUserToken userId)} AccessToGroup = TokenAccessToGroup
+accessToTokenAccess {token = (MkToken userId isAdmin)} {prf = (MkUserToken userId)} (AccessToParentLeft elem) = TokenAccessToParentLeft elem
+accessToTokenAccess {token = (MkToken userId isAdmin)} {prf = (MkUserToken userId)} (AccessToParentRight elem) = TokenAccessToParentRight elem
+accessToTokenAccess {token = token} {prf = prf} (AccessOnLeft tokenAccess) = TokenAccessOnLeft (accessToTokenAccess {token=token} {prf=prf} tokenAccess)
+accessToTokenAccess {token = token} {prf = prf} (AccessOnRight tokenAccess) = TokenAccessOnRight (accessToTokenAccess {token=token} {prf=prf} tokenAccess)
 
 data HasDirectAccess : (groupId : GroupId) -> UserId -> Elem groupId group -> Group -> Type where
   DirectAccessToGroup : HasDirectAccess groupId userId ThisGroup (MkGroup groupId (Just userId) l r)
