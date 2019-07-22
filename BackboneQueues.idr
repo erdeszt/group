@@ -102,6 +102,7 @@ BackboneQueueApi LBA where
 
   requirement_getNext_from_empty_queue_is_always_Nothing = Refl
 
+  -- NOTE(decEqSelfIsYes): https://github.com/idris-lang/Idris-dev/issues/4394
   requirement_non_interference_between_derms {otherDermsItems = []} {dermId} =
     -- rewrite decEqSelfIsYes {x=dermId} in
     ?wat
