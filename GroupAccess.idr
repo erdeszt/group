@@ -110,10 +110,6 @@ createAccess (MkGroup gid m l (Just right)) (RightGroup elem) userId with (group
   createAccess (MkGroup gid (Just userId) l (Just right)) (RightGroup elem) userId | ThisMember = Just (AccessToParentRight elem)
   createAccess (MkGroup gid _ l (Just right)) (RightGroup elem) userId             | _          = map AccessOnRight (createAccess right elem userId)
 
--- thm_map_just : {value : a} -> Just (P value) = map P (Just value)
-
-
-data Id a = MkId a
 
 map_just : (f : a -> b) -> Just (f x) = map f (Just x)
 map_just f = Refl
@@ -136,7 +132,7 @@ thm_create_access_correct {group = (MkGroup h (Just userId) l (Just right))} {us
 thm_create_access_correct {group = (MkGroup h m (Just x) r)} {userId = userId} (LeftGroup y) (AccessOnLeft z) with (groupMember m userId)
   thm_create_access_correct {group = (MkGroup h Nothing (Just x) r)} {userId = userId} (LeftGroup y) (AccessOnLeft z) | NoMember =
     case thm_create_access_correct y z of
-      prf => ?wat
+      prf => ?rhs
         -- rewrite prf in ?wat
         -- rewrite sym (map_just (AccessOnLeft)) in ?wat
   thm_create_access_correct {group = (MkGroup h (Just otherUserId) (Just x) r)} {userId = userId} (LeftGroup y) (AccessOnLeft z) | (NotThisMember contra) = ?wat_2
