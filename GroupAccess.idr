@@ -97,14 +97,14 @@ createAccess (MkGroup groupId member l r) ThisGroup userId =
         Yes Refl => Just AccessToGroup
 createAccess (MkGroup gid member (Just left) r) (LeftGroup elem) userId =
   case member of
-    Nothing => Nothing
+    Nothing => map AccessOnLeft (createAccess left elem userId)
     Just memberId =>
       case decEq userId memberId of
         No contra => map AccessOnLeft (createAccess left elem userId)
         Yes Refl => Just (AccessToParentLeft elem)
 createAccess (MkGroup gid member l (Just right)) (RightGroup elem) userId =
   case member of
-    Nothing => Nothing
+    Nothing => map AccessOnRight (createAccess right elem userId)
     Just memberId =>
       case decEq userId memberId of
         No contra => map AccessOnRight (createAccess right elem userId)
