@@ -18,7 +18,6 @@ data ListForAll : (p : a -> Bool) -> List a -> Type where
   ListForAllEmpty : ListForAll p []
   ListForAllCons : {xs : List a} -> (x : a) -> ListForAll p xs -> {prf : So (p x)} -> ListForAll p (x :: xs)
 
-
 listForAll : (p : a -> Bool) -> (xs : List a) -> Maybe (ListForAll p xs)
 listForAll p [] = Just ListForAllEmpty
 listForAll p (x :: xs) =
