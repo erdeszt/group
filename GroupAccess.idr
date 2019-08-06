@@ -154,14 +154,14 @@ solve_map : {a : Type} -> (F : a -> b) -> (y : a) -> (x : Maybe a) -> (prf : x =
 solve_map f y Nothing Refl impossible
 solve_map f y (Just y) Refl = Refl
 
-solve_left : (createAccess left leftElem userId = Just leftAccess)
+lemma_create_access_left_access : (createAccess left leftElem userId = Just leftAccess)
      -> map AccessOnLeft (createAccess left leftElem userId) = Just (AccessOnLeft leftAccess)
-solve_left {userId} {left} {leftElem} {leftAccess} prf =
+lemma_create_access_left_access {userId} {left} {leftElem} {leftAccess} prf =
   solve_map AccessOnLeft leftAccess (createAccess left leftElem userId) prf
 
-solve_right : (createAccess right rightElem userId = Just rightAccess)
+lemma_create_access_right_access : (createAccess right rightElem userId = Just rightAccess)
      -> map AccessOnRight (createAccess right rightElem userId) = Just (AccessOnRight rightAccess)
-solve_right {userId} {right} {rightElem} {rightAccess} prf =
+lemma_create_access_right_access {userId} {right} {rightElem} {rightAccess} prf =
   solve_map AccessOnRight rightAccess (createAccess right rightElem userId) prf
 
 thm_create_access_correct : {groupId : GroupId}
@@ -182,22 +182,22 @@ thm_create_access_correct {userId = userId} (MkGroup h (Just userId) l (Just rig
 thm_create_access_correct {userId = userId} (MkGroup h m (Just left) r) (LeftGroup leftElem) (AccessOnLeft leftAccess) with (groupMember m userId)
   thm_create_access_correct {userId = userId} (MkGroup h Nothing (Just left) r) (LeftGroup leftElem) (AccessOnLeft leftAccess) | (NoMember contra) =
     case thm_create_access_correct left leftElem leftAccess of
-      Left direct => Left (solve_left direct)
+      Left direct => Left (lemma_create_access_left_access direct)
       Right (parentId ** (parentElem ** (child, parentAccess))) => Right (parentId ** (LeftGroup parentElem ** (PrefixLeft child, AccessOnLeft parentAccess)))
   thm_create_access_correct {userId = userId} (MkGroup h (Just otherUserId) (Just left) r) (LeftGroup leftElem) (AccessOnLeft leftAccess) | (NotThisMember contra) =
     case thm_create_access_correct left leftElem leftAccess of
-      Left direct => Left (solve_left direct)
+      Left direct => Left (lemma_create_access_left_access direct)
       Right (parentId ** (parentElem ** (child, parentAccess))) => Right (parentId ** (LeftGroup parentElem ** (PrefixLeft child, AccessOnLeft parentAccess)))
   thm_create_access_correct {userId = userId} (MkGroup h (Just userId) (Just left) r) (LeftGroup leftElem) (AccessOnLeft leftAccess) | ThisMember =
     Right (h ** ThisGroup ** (ParentEndsHereChildOnLeft leftElem, AccessToGroup))
 thm_create_access_correct {userId = userId} (MkGroup h m l (Just right)) (RightGroup rightElem) (AccessOnRight rightAccess) with (groupMember m userId)
   thm_create_access_correct {userId = userId} (MkGroup h Nothing l (Just right)) (RightGroup rightElem) (AccessOnRight rightAccess) | (NoMember contra) =
     case thm_create_access_correct right rightElem rightAccess of
-      Left direct => Left (solve_right direct)
+      Left direct => Left (lemma_create_access_right_access direct)
       Right (parentId ** (parentElem ** (child, parentAccess))) => Right (parentId ** (RightGroup parentElem ** (PrefixRight child, AccessOnRight parentAccess)))
   thm_create_access_correct {userId = userId} (MkGroup h (Just otherUserId) l (Just right)) (RightGroup rightElem) (AccessOnRight rightAccess) | (NotThisMember contra) =
     case thm_create_access_correct right rightElem rightAccess of
-      Left direct => Left (solve_right direct)
+      Left direct => Left (lemma_create_access_right_access direct)
       Right (parentId ** (parentElem ** (child, parentAccess))) => Right (parentId ** (RightGroup parentElem ** (PrefixRight child, AccessOnRight parentAccess)))
   thm_create_access_correct {userId = userId} (MkGroup h (Just userId) l (Just right)) (RightGroup rightElem) (AccessOnRight rightAccess) | ThisMember =
     Right (h ** ThisGroup ** (ParentEndsHereChildOnRight rightElem, AccessToGroup))
