@@ -159,8 +159,7 @@ thm_create_access_correct : {groupId : GroupId}
                          -> (group : Group)
                          -> (elem : Elem groupId group)
                          -> (access : HasAccess groupId userId elem group)
-                         -- TODO: Add a proof of Child to the Right case
-                         -> Either (createAccess group elem userId = Just access) (parentId : GroupId ** (parentElem : Elem parentId group ** HasAccess parentId userId parentElem group))
+                         -> Either (createAccess group elem userId = Just access) (parentId : GroupId ** (parentElem : Elem parentId group ** (Child elem parentElem group, HasAccess parentId userId parentElem group)))
 thm_create_access_correct {userId = userId} (MkGroup groupId (Just userId) l r) ThisGroup AccessToGroup with (groupMember (Just userId) userId)
   thm_create_access_correct {userId = userId} (MkGroup groupId (Just userId) l r) ThisGroup AccessToGroup | (NotThisMember contra) = Left (absurd (contra Refl))
   thm_create_access_correct {userId = userId} (MkGroup groupId (Just userId) l r) ThisGroup AccessToGroup | ThisMember = Left Refl
@@ -174,32 +173,24 @@ thm_create_access_correct {userId = userId} (MkGroup h m (Just left) r) (LeftGro
   thm_create_access_correct {userId = userId} (MkGroup h Nothing (Just left) r) (LeftGroup leftElem) (AccessOnLeft leftAccess) | (NoMember contra) =
     case thm_create_access_correct left leftElem leftAccess of
       Left direct => Left (solve_left direct)
-      Right (parentId ** (parentElem ** parentAccess)) => Right (parentId ** (LeftGroup parentElem ** AccessOnLeft parentAccess))
+      Right (parentId ** (parentElem ** (child, parentAccess))) => Right (parentId ** (LeftGroup parentElem ** (PrefixLeft child, AccessOnLeft parentAccess)))
   thm_create_access_correct {userId = userId} (MkGroup h (Just otherUserId) (Just left) r) (LeftGroup leftElem) (AccessOnLeft leftAccess) | (NotThisMember contra) =
     case thm_create_access_correct left leftElem leftAccess of
       Left direct => Left (solve_left direct)
-      Right (parentId ** (parentElem ** parentAccess)) => Right (parentId ** LeftGroup parentElem ** AccessOnLeft parentAccess)
+      Right (parentId ** (parentElem ** (child, parentAccess))) => Right (parentId ** (LeftGroup parentElem ** (PrefixLeft child, AccessOnLeft parentAccess)))
   thm_create_access_correct {userId = userId} (MkGroup h (Just userId) (Just left) r) (LeftGroup leftElem) (AccessOnLeft leftAccess) | ThisMember =
-    Right (h ** (ThisGroup ** AccessToGroup))
+    Right (h ** ThisGroup ** (ParentEndsHereChildOnLeft leftElem, AccessToGroup))
 thm_create_access_correct {userId = userId} (MkGroup h m l (Just right)) (RightGroup rightElem) (AccessOnRight rightAccess) with (groupMember m userId)
   thm_create_access_correct {userId = userId} (MkGroup h Nothing l (Just right)) (RightGroup rightElem) (AccessOnRight rightAccess) | (NoMember contra) =
     case thm_create_access_correct right rightElem rightAccess of
       Left direct => Left (solve_right direct)
-      Right (parentId ** (parentElem ** parentAccess)) => Right (parentId ** RightGroup parentElem ** AccessOnRight parentAccess)
+      Right (parentId ** (parentElem ** (child, parentAccess))) => Right (parentId ** (RightGroup parentElem ** (PrefixRight child, AccessOnRight parentAccess)))
   thm_create_access_correct {userId = userId} (MkGroup h (Just otherUserId) l (Just right)) (RightGroup rightElem) (AccessOnRight rightAccess) | (NotThisMember contra) =
     case thm_create_access_correct right rightElem rightAccess of
       Left direct => Left (solve_right direct)
-      Right (parentId ** (parentElem ** parentAccess)) => Right (parentId ** RightGroup parentElem ** AccessOnRight parentAccess)
+      Right (parentId ** (parentElem ** (child, parentAccess))) => Right (parentId ** (RightGroup parentElem ** (PrefixRight child, AccessOnRight parentAccess)))
   thm_create_access_correct {userId = userId} (MkGroup h (Just userId) l (Just right)) (RightGroup rightElem) (AccessOnRight rightAccess) | ThisMember =
-    Right (h ** ThisGroup ** AccessToGroup)
-
-thm_create_access_correct_2 : {groupId : GroupId}
-                         -> {userId : UserId}
-                         -> (group : Group)
-                         -> (elem : Elem groupId group)
-                         -> (access : HasAccess groupId userId elem group)
-                         -> Either (createAccess group elem userId = Just access) (parentId : GroupId ** (parentElem : Elem parentId group ** (Child elem parentElem group, HasAccess parentId userId parentElem group)))
-thm_create_access_correct {userId} group elem access = ?wat
+    Right (h ** ThisGroup ** (ParentEndsHereChildOnRight rightElem, AccessToGroup))
 
 createDirectAccess : {groupId : GroupId}
                   -> (group : Group)
