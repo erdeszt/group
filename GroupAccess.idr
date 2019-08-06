@@ -138,7 +138,17 @@ createMember userId (MkGroup groupId member (Just left) (Just right)) with (grou
     map MemberInRight (createMember userId right) <|> map MemberInLeft (createMember userId left)
   createMember userId (MkGroup groupId (Just userId) (Just left) (Just right)) | ThisMember = Just MemberHere
 
--- member_to_access : {userId : UserId} -> {group : Group} -> Member userId group -> (groupId : GroupId ** (elem : Elem groupId group ** HasAccess groupId userId elem group))
+member_to_access : {userId : UserId}
+                -> {group : Group}
+                -> Member userId group
+                -> DPair GroupId (\groupId => DPair (Elem groupId group) (\elem => HasAccess groupId userId elem group))
+member_to_access {userId = userId} {group = (MkGroup g (Just userId) l r)} MemberHere = (g ** (ThisGroup ** AccessToGroup))
+member_to_access {userId = userId} {group = (MkGroup g m (Just x) r)} (MemberInLeft leftMember) =
+  case member_to_access leftMember of
+    (groupId ** (elem ** access)) => (groupId ** (LeftGroup elem ** AccessOnLeft access))
+member_to_access {userId = userId} {group = (MkGroup g m l (Just x))} (MemberInRight rightMember) =
+  case member_to_access rightMember of
+    (groupId ** (elem ** access)) => (groupId ** (RightGroup elem ** AccessOnRight access))
 
 solve_map : {a : Type} -> (F : a -> b) -> (y : a) -> (x : Maybe a) -> (prf : x = Just y) -> map F x = Just (F y)
 solve_map f y Nothing Refl impossible
