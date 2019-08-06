@@ -84,16 +84,19 @@ directAccessExtendsToChildren : {g, g' : GroupId}
 directAccessExtendsToChildren directAccess child = accessExtendsToChildren (directAccessToAccess directAccess) child
 
 data GroupMember : Maybe UserId -> UserId -> Type where
-  NoMember : GroupMember Nothing userId
+  NoMember : {userId : UserId} -> (contra : Just userId = Nothing -> Void) ->  GroupMember Nothing userId
   NotThisMember : {userId, otherUserId : UserId} -> (contra : otherUserId = userId -> Void) -> GroupMember (Just otherUserId) userId
   ThisMember : GroupMember (Just userId) userId
 
 groupMember : (member : Maybe UserId) -> (userId : UserId) -> GroupMember member userId
-groupMember Nothing userId = NoMember
+groupMember Nothing userId = NoMember (\prf => uninhabited prf)
 groupMember (Just memberId) userId =
   case decEq memberId userId of
     (Yes Refl) => ThisMember
     (No contra) => NotThisMember contra
+
+justsEq : Just a = Just b -> a = b
+justsEq Refl = Refl
 
 createAccess : {groupId : GroupId}
             -> (group : Group)
@@ -110,59 +113,93 @@ createAccess (MkGroup gid m l (Just right)) (RightGroup elem) userId with (group
   createAccess (MkGroup gid (Just userId) l (Just right)) (RightGroup elem) userId | ThisMember = Just (AccessToParentRight elem)
   createAccess (MkGroup gid _ l (Just right)) (RightGroup elem) userId             | _          = map AccessOnRight (createAccess right elem userId)
 
-createAccess2 : {groupId : GroupId}
-            -> (group : Group)
-            -> (elem : Elem groupId group)
-            -> (userId : UserId)
-            -> Maybe (HasAccess groupId userId elem group)
-createAccess2 (MkGroup groupId m l r) ThisGroup userId with (groupMember m userId)
-  createAccess2 (MkGroup groupId (Just userId) l r) ThisGroup userId  | ThisMember = Just AccessToGroup
-  createAccess2 (MkGroup groupId _ l r) ThisGroup userId              | _          = Nothing
-createAccess2 (MkGroup gid m (Just left) r) (LeftGroup elem) userId with (groupMember m userId)
-  createAccess2 (MkGroup gid (Just userId) (Just left) r) (LeftGroup elem) userId  | ThisMember = Just (AccessToParentLeft elem)
-  createAccess2 (MkGroup gid _ (Just left) r) (LeftGroup elem) userId              | _  with (createAccess2 left elem userId)
-    | Nothing = Nothing
-    | (Just access) = Just (AccessOnLeft access)
-createAccess2 (MkGroup gid m l (Just right)) (RightGroup elem) userId with (groupMember m userId)
-  createAccess2 (MkGroup gid (Just userId) l (Just right)) (RightGroup elem) userId | ThisMember = Just (AccessToParentRight elem)
-  createAccess2 (MkGroup gid _ l (Just right)) (RightGroup elem) userId             | _ with (createAccess2 right elem userId)
-    | Nothing = Nothing
-    | (Just access) = Just (AccessOnRight access)
+data Member : UserId -> Group -> Type where
+  MemberHere : Member userId (MkGroup g (Just userId) l r)
+  MemberInLeft : Member userId group -> Member userId (MkGroup g m (Just group) r)
+  MemberInRight : Member userId group -> Member userId (MkGroup g m l (Just group))
+
+createMember : (userId : UserId) -> (group : Group) -> Maybe (Member userId group)
+createMember userId (MkGroup groupId member Nothing Nothing) with (groupMember member userId)
+  createMember userId (MkGroup groupId Nothing Nothing Nothing) | NoMember = Nothing
+  createMember userId (MkGroup groupId (Just otherUserId) Nothing Nothing) | (NotThisMember contra) = Nothing
+  createMember userId (MkGroup groupId (Just userId) Nothing Nothing) | ThisMember = Just MemberHere
+createMember userId (MkGroup groupId member Nothing (Just right)) with (groupMember member userId)
+  createMember userId (MkGroup groupId Nothing Nothing (Just right)) | NoMember = map MemberInRight (createMember userId right)
+  createMember userId (MkGroup groupId (Just otherUserId) Nothing (Just right)) | (NotThisMember contra) = map MemberInRight (createMember userId right)
+  createMember userId (MkGroup groupId (Just userId) Nothing (Just right)) | ThisMember = Just MemberHere
+createMember userId (MkGroup groupId member (Just left) Nothing) with (groupMember member userId)
+  createMember userId (MkGroup groupId Nothing (Just left) Nothing) | NoMember = map MemberInLeft (createMember userId left)
+  createMember userId (MkGroup groupId (Just otherUserId) (Just left) Nothing) | (NotThisMember contra) = map MemberInLeft (createMember userId left)
+  createMember userId (MkGroup groupId (Just userId) (Just left) Nothing) | ThisMember = Just MemberHere
+createMember userId (MkGroup groupId member (Just left) (Just right)) with (groupMember member userId)
+  createMember userId (MkGroup groupId Nothing (Just left) (Just right)) | NoMember =
+    map MemberInRight (createMember userId right) <|> map MemberInLeft (createMember userId left)
+  createMember userId (MkGroup groupId (Just otherUserId) (Just left) (Just right)) | (NotThisMember contra) =
+    map MemberInRight (createMember userId right) <|> map MemberInLeft (createMember userId left)
+  createMember userId (MkGroup groupId (Just userId) (Just left) (Just right)) | ThisMember = Just MemberHere
+
+-- member_to_access : {userId : UserId} -> {group : Group} -> Member userId group -> (groupId : GroupId ** (elem : Elem groupId group ** HasAccess groupId userId elem group))
+
+solve_map : {a : Type} -> (F : a -> b) -> (y : a) -> (x : Maybe a) -> (prf : x = Just y) -> map F x = Just (F y)
+solve_map f y Nothing Refl impossible
+solve_map f y (Just y) Refl = Refl
+
+solve_left : (createAccess left leftElem userId = Just leftAccess)
+     -> map AccessOnLeft (createAccess left leftElem userId) = Just (AccessOnLeft leftAccess)
+solve_left {userId} {left} {leftElem} {leftAccess} prf =
+  solve_map AccessOnLeft leftAccess (createAccess left leftElem userId) prf
+
+solve_right : (createAccess right rightElem userId = Just rightAccess)
+     -> map AccessOnRight (createAccess right rightElem userId) = Just (AccessOnRight rightAccess)
+solve_right {userId} {right} {rightElem} {rightAccess} prf =
+  solve_map AccessOnRight rightAccess (createAccess right rightElem userId) prf
 
 thm_create_access_correct : {groupId : GroupId}
                          -> {userId : UserId}
-                         -> {group : Group}
+                         -> (group : Group)
                          -> (elem : Elem groupId group)
                          -> (access : HasAccess groupId userId elem group)
-                         -> (createAccess2 group elem userId = Just access)
-thm_create_access_correct {group = (MkGroup groupId (Just userId) l r)} {userId = userId} ThisGroup AccessToGroup with (groupMember (Just userId) userId)
-  thm_create_access_correct {group = (MkGroup groupId (Just userId) l r)} {userId = userId} ThisGroup AccessToGroup | (NotThisMember contra) = absurd (contra Refl)
-  thm_create_access_correct {group = (MkGroup groupId (Just userId) l r)} {userId = userId} ThisGroup AccessToGroup | ThisMember = Refl
-thm_create_access_correct {group = (MkGroup h (Just userId) (Just left) r)} {userId = userId} (LeftGroup elem) (AccessToParentLeft elem) with (groupMember (Just userId) userId)
-  thm_create_access_correct {group = (MkGroup h (Just userId) (Just left) r)} {userId = userId} (LeftGroup elem) (AccessToParentLeft elem) | (NotThisMember contra) = absurd (contra Refl)
-  thm_create_access_correct {group = (MkGroup h (Just userId) (Just left) r)} {userId = userId} (LeftGroup elem) (AccessToParentLeft elem) | ThisMember = Refl
-thm_create_access_correct {group = (MkGroup h (Just userId) l (Just right))} {userId = userId} (RightGroup elem) (AccessToParentRight elem) with (groupMember (Just userId) userId)
-  thm_create_access_correct {group = (MkGroup h (Just userId) l (Just right))} {userId = userId} (RightGroup elem) (AccessToParentRight elem) | (NotThisMember contra) = absurd (contra Refl)
-  thm_create_access_correct {group = (MkGroup h (Just userId) l (Just right))} {userId = userId} (RightGroup elem) (AccessToParentRight elem) | ThisMember = Refl
-thm_create_access_correct {group = (MkGroup h m (Just x) r)} {userId = userId} (LeftGroup y) (AccessOnLeft z) with (groupMember m userId)
-  thm_create_access_correct {group = (MkGroup h Nothing (Just x) r)} {userId = userId} (LeftGroup y) (AccessOnLeft z) | NoMember =
-    let thm' = thm_create_access_correct y z in
-    rewrite thm' in
-    Refl
-  thm_create_access_correct {group = (MkGroup h (Just otherUserId) (Just x) r)} {userId = userId} (LeftGroup y) (AccessOnLeft z) | (NotThisMember contra) =
-    let thm' = thm_create_access_correct y z in
-    rewrite thm' in
-    Refl
-  thm_create_access_correct {group = (MkGroup h (Just userId) (Just x) r)} {userId = userId} (LeftGroup y) (AccessOnLeft z) | ThisMember =
-    -- let el = accessToElem z in
-    -- let el_plus = accessToElem (AccessOnLeft z) in
-    -- cong {f=Just} ?lemma_access_multi
-    let thm' = thm_create_access_correct {group=x} y z in
-    -- rewrite thm' in
-    -- The issue here GroupMember has no relation to HasAccess so it doesn't know it cannot be ThisGroup
-    ?watta
-thm_create_access_correct {group = (MkGroup h m l (Just x))} {userId = userId} (RightGroup y) (AccessOnRight z) = ?rhs_5
+                         -- TODO: Add a proof of Child to the Right case
+                         -> Either (createAccess group elem userId = Just access) (parentId : GroupId ** (parentElem : Elem parentId group ** HasAccess parentId userId parentElem group))
+thm_create_access_correct {userId = userId} (MkGroup groupId (Just userId) l r) ThisGroup AccessToGroup with (groupMember (Just userId) userId)
+  thm_create_access_correct {userId = userId} (MkGroup groupId (Just userId) l r) ThisGroup AccessToGroup | (NotThisMember contra) = Left (absurd (contra Refl))
+  thm_create_access_correct {userId = userId} (MkGroup groupId (Just userId) l r) ThisGroup AccessToGroup | ThisMember = Left Refl
+thm_create_access_correct {userId = userId} (MkGroup h (Just userId) (Just left) r) (LeftGroup x) (AccessToParentLeft x) with (groupMember (Just userId) userId)
+  thm_create_access_correct {userId = userId} (MkGroup h (Just userId) (Just left) r) (LeftGroup x) (AccessToParentLeft x) | (NotThisMember contra) = Left (absurd (contra Refl))
+  thm_create_access_correct {userId = userId} (MkGroup h (Just userId) (Just left) r) (LeftGroup x) (AccessToParentLeft x) | ThisMember = Left Refl
+thm_create_access_correct {userId = userId} (MkGroup h (Just userId) l (Just right)) (RightGroup x) (AccessToParentRight x) with (groupMember (Just userId) userId)
+  thm_create_access_correct {userId = userId} (MkGroup h (Just userId) l (Just right)) (RightGroup x) (AccessToParentRight x) | (NotThisMember contra) = Left (absurd (contra Refl))
+  thm_create_access_correct {userId = userId} (MkGroup h (Just userId) l (Just right)) (RightGroup x) (AccessToParentRight x) | ThisMember = Left Refl
+thm_create_access_correct {userId = userId} (MkGroup h m (Just left) r) (LeftGroup leftElem) (AccessOnLeft leftAccess) with (groupMember m userId)
+  thm_create_access_correct {userId = userId} (MkGroup h Nothing (Just left) r) (LeftGroup leftElem) (AccessOnLeft leftAccess) | (NoMember contra) =
+    case thm_create_access_correct left leftElem leftAccess of
+      Left direct => Left (solve_left direct)
+      Right (parentId ** (parentElem ** parentAccess)) => Right (parentId ** (LeftGroup parentElem ** AccessOnLeft parentAccess))
+  thm_create_access_correct {userId = userId} (MkGroup h (Just otherUserId) (Just left) r) (LeftGroup leftElem) (AccessOnLeft leftAccess) | (NotThisMember contra) =
+    case thm_create_access_correct left leftElem leftAccess of
+      Left direct => Left (solve_left direct)
+      Right (parentId ** (parentElem ** parentAccess)) => Right (parentId ** LeftGroup parentElem ** AccessOnLeft parentAccess)
+  thm_create_access_correct {userId = userId} (MkGroup h (Just userId) (Just left) r) (LeftGroup leftElem) (AccessOnLeft leftAccess) | ThisMember =
+    Right (h ** (ThisGroup ** AccessToGroup))
+thm_create_access_correct {userId = userId} (MkGroup h m l (Just right)) (RightGroup rightElem) (AccessOnRight rightAccess) with (groupMember m userId)
+  thm_create_access_correct {userId = userId} (MkGroup h Nothing l (Just right)) (RightGroup rightElem) (AccessOnRight rightAccess) | (NoMember contra) =
+    case thm_create_access_correct right rightElem rightAccess of
+      Left direct => Left (solve_right direct)
+      Right (parentId ** (parentElem ** parentAccess)) => Right (parentId ** RightGroup parentElem ** AccessOnRight parentAccess)
+  thm_create_access_correct {userId = userId} (MkGroup h (Just otherUserId) l (Just right)) (RightGroup rightElem) (AccessOnRight rightAccess) | (NotThisMember contra) =
+    case thm_create_access_correct right rightElem rightAccess of
+      Left direct => Left (solve_right direct)
+      Right (parentId ** (parentElem ** parentAccess)) => Right (parentId ** RightGroup parentElem ** AccessOnRight parentAccess)
+  thm_create_access_correct {userId = userId} (MkGroup h (Just userId) l (Just right)) (RightGroup rightElem) (AccessOnRight rightAccess) | ThisMember =
+    Right (h ** ThisGroup ** AccessToGroup)
 
+thm_create_access_correct_2 : {groupId : GroupId}
+                         -> {userId : UserId}
+                         -> (group : Group)
+                         -> (elem : Elem groupId group)
+                         -> (access : HasAccess groupId userId elem group)
+                         -> Either (createAccess group elem userId = Just access) (parentId : GroupId ** (parentElem : Elem parentId group ** (Child elem parentElem group, HasAccess parentId userId parentElem group)))
+thm_create_access_correct {userId} group elem access = ?wat
 
 createDirectAccess : {groupId : GroupId}
                   -> (group : Group)

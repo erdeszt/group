@@ -64,3 +64,4 @@ main = do
   putStrLn (showHasAccess accessTo4)
   putStrLn (showHasAccess accessTo8)
   putStrLn (showHasAccess accessTo8')
+  pure ()
